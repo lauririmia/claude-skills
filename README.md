@@ -42,19 +42,19 @@ Once a new plugin has been pushed to `main`, pull it in on another machine:
 /plugin marketplace add lauririmia/claude-code
 ```
 
-Only needed if that machine hasn't registered the `claude-skills-laur` marketplace before. Skip straight to the next step if it already has (e.g. it already runs other plugins from this repo).
+Only needed if that machine hasn't registered the `claude-skills` marketplace before. Skip straight to the next step if it already has (e.g. it already runs other plugins from this repo).
 
 ```
-/plugin marketplace update claude-skills-laur
-/plugin install <plugin>@claude-skills-laur
+/plugin marketplace update claude-skills
+/plugin install <plugin>@claude-skills
 ```
 
 `marketplace update` refreshes the plugin list from the pushed commit; `install` is only needed once per new plugin — plugins already installed pick up future updates via the section below, not another `install`.
 
 ## Updating an installed plugin after local changes
 
-Plugins installed from the `claude-skills-laur` marketplace run from a **cached copy** under
-`~/.claude/plugins/cache/claude-skills-laur/<plugin>/<version>/`, not from this repo's working
+Plugins installed from the `claude-skills` marketplace run from a **cached copy** under
+`~/.claude/plugins/cache/claude-skills/<plugin>/<version>/`, not from this repo's working
 directory. The cache is keyed by version, so bumping `version` in a plugin's `plugin.json` is
 what makes a change visible as an update at all — it's a manual step, not automated by a script
 or hook, so do it as part of committing the change, before pushing. Bumping the version alone
@@ -62,11 +62,11 @@ does not update the cache on other machines — the marketplace metadata and the
 must be refreshed explicitly there, then the session restarted:
 
 ```
-claude plugin marketplace update claude-skills-laur
-claude plugin update <plugin>@claude-skills-laur
+claude plugin marketplace update claude-skills
+claude plugin update <plugin>@claude-skills
 ```
 
-The `claude-skills-laur` marketplace is registered from the GitHub remote
+The `claude-skills` marketplace is registered from the GitHub remote
 (`https://github.com/lauririmia/claude-skills.git`), not from this local working directory —
 local commits must be pushed to `main` before `marketplace update` will see them.
 
