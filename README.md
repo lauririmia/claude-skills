@@ -39,7 +39,7 @@ A group of related skills becomes a plugin in `plugins/` with its own namespace 
 Once a new plugin has been pushed to `main`, pull it in on another machine:
 
 ```
-/plugin marketplace add OnlineNM/claude-code-skills
+/plugin marketplace add lauririmia/claude-code
 ```
 
 Only needed if that machine hasn't registered the `claude-skills-laur` marketplace before. Skip straight to the next step if it already has (e.g. it already runs other plugins from this repo).
@@ -67,7 +67,7 @@ claude plugin update <plugin>@claude-skills-laur
 ```
 
 The `claude-skills-laur` marketplace is registered from the GitHub remote
-(`https://github.com/OnlineNM/claude-code-skills.git`), not from this local working directory —
+(`https://github.com/lauririmia/claude-skills.git`), not from this local working directory —
 local commits must be pushed to `main` before `marketplace update` will see them.
 
 Then restart the Claude Code session (or start a new one) for the refreshed skill list to load —
