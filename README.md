@@ -25,14 +25,14 @@ A group of related skills becomes a plugin in `plugins/` with its own namespace 
 
 | Plugin | Path | Skills |
 |---|---|---|
+| `coursiv` | [plugins/coursiv/](plugins/coursiv/) | `question`, `prompt`, `columns`, `workflow`, `lesson`, `cleanup` — processing Coursiv.io lessons |
+| `dbg` | [plugins/debug/](plugins/debug/) | `diagnose`, `critique`, `handoff`, `improve-codebase-architecture` |
 | `pmpt` | [plugins/prompt/](plugins/prompt/) | `gcao`, `universal`, `short` — prompt engineering transforms |
 | `ppc` | [plugins/paperclip/](plugins/paperclip/) | `define`, `deploy`, `pull`, `push`, `update`, `hire-config` — Paperclip agent lifecycle |
 | `sdd` | [plugins/spec-driven-development/](plugins/spec-driven-development/) | Spec-driven development workflow |
-| `dbg` | [plugins/debug/](plugins/debug/) | `diagnose`, `critique`, `handoff`, `improve-codebase-architecture` |
 | `skill-check` | [plugins/skill-check/](plugins/skill-check/) | `detect-claude`, `declaudeify`, `convert`, `lint` — skill portability |
-| `wbs` | [plugins/website/](plugins/website/) | `mockup`, `screenshot`, `css`, `design-recreation` |
 | `telegram` | [plugins/telegram/](plugins/telegram/) | `notify`, `status`, `toggle` |
-| `coursiv` | [plugins/coursiv/](plugins/coursiv/) | `question`, `prompt`, `columns`, `workflow`, `lesson`, `cleanup` — processing Coursiv.io lessons |
+| `wbs` | [plugins/website/](plugins/website/) | `mockup`, `screenshot`, `css`, `design-recreation` |
 
 ## Installing a plugin for the first time on another machine
 
