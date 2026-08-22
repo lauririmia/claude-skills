@@ -15,7 +15,9 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 Conduct all dialogue with the user — questions, confirmations, status updates — exclusively in Romanian, regardless of the language the input document or user description was written in.
 
-All deliverables this skill writes (`docs/<idea-slug>-SESSION.md`, `docs/<idea-slug>-IDEATE.md`) must always be written in English. When a confirmed direction is captured in `IDEATE.md`, translate it into English rather than copying the Romanian wording verbatim.
+`docs/<idea-slug>-SESSION.md` is a scratch file that never leaves this skill and is deleted before handoff (see Output below) — write it in Romanian, matching the dialogue it mirrors.
+
+`docs/<idea-slug>-IDEATE.md` starts in Romanian too: `steps/05-sharpen.md` writes the initial draft in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval, translate the file in place into English, before handing off to `steps/06-commit-and-handoff.md` — see that step for the translation instruction. From that point on the committed `IDEATE.md` and its handoff to `sdd:spec` are in English, because the rest of the plugin's tooling (and the spec skill's own artifacts) works in English.
 
 ## Invocation
 
@@ -68,3 +70,4 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 - Do NOT write code or invoke other skills
 - Do NOT generate more than 5–8 variations in Phase 1 or more than 2–3 directions in Phase 2
 - Do NOT print full file contents (DESIGN.md, IDEATE.md, SESSION.md, git output, command logs) in the conversation unless the user explicitly asks to see them
+- `IDEATE.md` is Romanian until the user approves at the end of `05-sharpen.md`, then English from that point on — never commit or hand off to `06-commit-and-handoff.md` with a Romanian `IDEATE.md` still on disk

@@ -17,7 +17,9 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 Conduct all dialogue with the user — questions, proposed approaches, confirmations, status updates — exclusively in Romanian, regardless of the language the project/feature description was written in.
 
-All deliverables this skill writes (`docs/<idea-slug>-SESSION.md`, `docs/<idea-slug>-SPEC.md`, `docs/<idea-slug>-SPEC-REVIEW.md`) must always be written in English, independent of the Romanian dialogue above. Internal reasoning and the Codex review exchange also stay in English. When a decision reached in Romanian dialogue is captured in a deliverable, translate it into English rather than copying the Romanian wording verbatim.
+`docs/<idea-slug>-SESSION.md` is a scratch file that never leaves Act 1 and is deleted before Resolution (see Persistence and Resolution below) — write it in Romanian, matching the dialogue it mirrors.
+
+`docs/<idea-slug>-SPEC.md` and `docs/<idea-slug>-SPEC-REVIEW.md` start in Romanian too: Step 5 writes the initial spec in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval (Step 5, before Act 2 begins), translate both files in place into English — see Step 5b. From that point on, everything related to these two files (further edits, the Codex review exchange, the append-only log, commit messages) stays in English, because Act 2 hands `SPEC.md`'s content inline to Codex and the rest of the skill's tooling assumes English. Internal reasoning stays in English throughout.
 
 ## Persistence
 
@@ -132,39 +134,49 @@ Do not write a spec section for an objective that cannot be directly verified.
 Invoke `superpowers:brainstorming` with **two overrides**: do NOT invoke `writing-plans` at the end; and do NOT display the spec content in the console or commit automatically — see Step 5.
 
 ### Step 5 — Write SPEC.md
-After the brainstorming is complete, write a structured summary directly to `docs/<idea-slug>-SPEC.md` without displaying its full content in the console:
+After the brainstorming is complete, write a structured summary directly to `docs/<idea-slug>-SPEC.md`, **in Romanian**, without displaying its full content in the console:
 
 ```markdown
 # Spec: <feature>
-_Locked via brainstorming — by Claude + <user>_
+_Blocat prin brainstorming — de Claude + <user>_
 
-## Goal
-<one paragraph reflecting what brainstorming settled>
+## Obiectiv
+<un paragraf care reflectă ce s-a stabilit prin brainstorming>
 
-## Approach
-<the chosen approach and key design decisions>
+## Abordare
+<abordarea aleasă și deciziile cheie de design>
 
-## Key decisions & tradeoffs
-<contestable choices — give Codex something to bite>
+## Decizii cheie și compromisuri
+<alegeri discutabile — oferă-i lui Codex ceva de care să se agațe>
 
-## Risks / open questions
-<anything still genuinely open>
+## Riscuri / întrebări deschise
+<orice rămâne cu adevărat deschis>
 
-## Out of scope
-<explicit bounds established during brainstorming>
+## În afara scopului
+<limite explicite stabilite în timpul brainstorming-ului>
 ```
 
-Initialize `docs/<idea-slug>-SPEC-REVIEW.md`:
+Initialize `docs/<idea-slug>-SPEC-REVIEW.md`, also in Romanian:
 ```
-# Spec Review Log: <feature>
-Act 1 (brainstorming) complete — spec locked with user. MAX_ROUNDS=<n>.
+# Jurnal Review Spec: <feature>
+Act 1 (brainstorming) finalizat — spec blocat cu userul. MAX_ROUNDS=<n>.
 ```
 
 After writing both files:
-1. Tell the user: *"Spec written to `docs/<idea-slug>-SPEC.md`. Please review it and let me know if you have any changes or if you approve."*
-2. If the user provides feedback, update `docs/<idea-slug>-SPEC.md` accordingly and ask again.
-3. Only commit to git when the user **explicitly approves** (e.g. "looks good", "approve", "done", "ok"). Do NOT commit automatically.
-4. After the commit (or user approval without changes), proceed to Act 2.
+1. Tell the user: *"Specul a fost scris în `docs/<idea-slug>-SPEC.md`. Te rog să-l revizuiești și să-mi spui dacă ai modificări sau dacă îl aprobi."*
+2. If the user provides feedback, update `docs/<idea-slug>-SPEC.md` accordingly (still in Romanian) and ask again.
+3. Only proceed once the user **explicitly approves** (e.g. "arată bine", "aprob", "gata", "ok"). Do NOT proceed automatically.
+4. Once approved, run **Step 5b** before touching git or Act 2.
+
+### Step 5b — Translate to English
+
+The user just approved the Romanian spec — now bring it in line with the rest of the skill, which runs in English from here on (Act 2 hands `SPEC.md`'s content inline to Codex, and the log/commit conventions are English):
+
+1. Translate `docs/<idea-slug>-SPEC.md` in full into English, preserving the same structure (`# Spec: <feature>`, `_Locked via brainstorming — by Claude + <user>_`, `## Goal`, `## Approach`, `## Key decisions & tradeoffs`, `## Risks / open questions`, `## Out of scope`). Overwrite the file with the English version — do not keep the Romanian copy on disk.
+2. Translate `docs/<idea-slug>-SPEC-REVIEW.md`'s header into English (`# Spec Review Log: <feature>` / `Act 1 (brainstorming) complete — spec locked with user. MAX_ROUNDS=<n>.`) and overwrite it the same way.
+3. Do not display the translated content in the console — same discipline as Step 5.
+4. Only commit to git when the user **explicitly approves** (e.g. "looks good", "approve", "done", "ok"). Do NOT commit automatically. This is the same approval already captured at the end of Step 5 — the translation is a faithful rendering of what was just approved, not a content change, so it doesn't require asking again.
+5. After the commit (or user approval without changes), proceed to Act 2 with the now-English `SPEC.md`.
 
 ---
 
@@ -269,6 +281,7 @@ Rounds:    N
 
 ## Hard Rules
 - Act 1 always precedes Act 2 — no SPEC.md until brainstorming has actually resolved with the user.
+- `SPEC.md`/`SPEC-REVIEW.md` are Romanian until the user approves at the end of Step 5, then English from Step 5b onward — never enter Act 2 with a Romanian `SPEC.md` still on disk.
 - Pass spec content **inline** every round — do NOT use `-s read-only` or `-c sandbox_mode="read-only"` (bwrap blocks filesystem reads, Codex will fail silently and hallucinate).
 - Loop ALWAYS terminates at `MAX_ROUNDS`.
 - Claude is final arbiter on every REVISE — don't cave to everything, don't ignore it.

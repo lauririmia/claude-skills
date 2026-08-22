@@ -1,6 +1,6 @@
 # Step 06 — Commit and Handoff
 
-**Reads:** Approved `docs/<idea-slug>-IDEATE.md` from `05-sharpen.md`.
+**Reads:** Approved, English-language `docs/<idea-slug>-IDEATE.md` from `05-sharpen.md` (already translated from the Romanian draft the user approved).
 
 **Does:**
 

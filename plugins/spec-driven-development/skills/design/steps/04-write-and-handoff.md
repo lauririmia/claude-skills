@@ -6,34 +6,40 @@
 
 ### Write DESIGN.md
 
-After explicit "yes", write `docs/<idea-slug>-DESIGN.md`:
+After explicit "yes", write `docs/<idea-slug>-DESIGN.md`, **in Romanian** — the interview and the restat the user just confirmed were in Romanian, so the first draft on disk matches:
 
 ```markdown
-# Intent: <Idea Name>
-Confirmed: <YYYY-MM-DD>
+# Intenție: <Idea Name>
+Confirmat: <YYYY-MM-DD>
 
-## Outcome
-<one line>
+## Rezultat
+<un rând>
 
-## User
-<one line>
+## Utilizator
+<un rând>
 
-## Why Now
-<one line>
+## De ce acum
+<un rând>
 
-## Success Criteria
-<one line>
+## Criterii de succes
+<un rând>
 
-## Constraints
-<one line>
+## Constrângeri
+<un rând>
 
-## Out of Scope
-<one line>
+## În afara scopului
+<un rând>
 ```
+
+### Translate to English
+
+The committed `DESIGN.md` and its handoff to `sdd:ideate`/`sdd:spec` run in English (see SKILL.md, Language section), because the rest of the plugin's tooling works in English. There is no separate file-review step here — the user already gave their explicit "yes" on the restat in `03-confirm.md`, so translate immediately, without asking again: it's a faithful rendering of what was just confirmed, not a content change.
+
+Translate the file in full into English, preserving the same structure (`# Intent: <Idea Name>`, `Confirmed: <date>`, `## Outcome`, `## User`, `## Why Now`, `## Success Criteria`, `## Constraints`, `## Out of Scope`), and overwrite `docs/<idea-slug>-DESIGN.md` with the English version — do not keep the Romanian copy on disk. Do not print the translated content in the console.
 
 ### Commit
 
-`docs/<idea-slug>-SESSION.md` exists only to survive a context compaction mid-session — once DESIGN.md is written and about to be committed, its job is done. Delete it rather than committing it, so it never pollutes git history as a scratch file:
+`docs/<idea-slug>-SESSION.md` exists only to survive a context compaction mid-session — once DESIGN.md is written (now in English) and about to be committed, its job is done. Delete it rather than committing it, so it never pollutes git history as a scratch file:
 
 ```bash
 rm -f docs/<idea-slug>-SESSION.md

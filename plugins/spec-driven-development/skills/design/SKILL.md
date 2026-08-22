@@ -13,9 +13,11 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 ## Language
 
-Conduct all dialogue with the user — questions, confirmations, status updates — exclusively in Romanian, regardless of the language the project/feature description was written in.
+Conduct all dialogue with the user — the interview, hypotheses, the restat, confirmations, status updates — exclusively in Romanian, regardless of the language the project/feature description was written in.
 
-All deliverables this skill writes (`docs/<idea-slug>-SESSION.md`, `docs/<idea-slug>-DESIGN.md`) must always be written in English. When the confirmed restat is captured in `DESIGN.md`, translate it into English rather than copying the Romanian wording verbatim.
+`docs/<idea-slug>-SESSION.md` is a scratch file that never leaves this skill and is deleted before handoff (see Output below) — write it in Romanian, matching the dialogue it mirrors.
+
+`docs/<idea-slug>-DESIGN.md` starts in Romanian too: `steps/04-write-and-handoff.md` writes it immediately after the user's "yes" on the restat, in the same language as the interview that produced it. There is no separate file-review checkpoint for DESIGN.md (approval already happened on the restat in `03-confirm.md`), so the translation to English happens right away, within the same step, before the commit — see that step for the instruction. From that point on, the committed `DESIGN.md` and its handoff to `sdd:ideate`/`sdd:spec` are in English, because the rest of the plugin's tooling works in English.
 
 ## Output and Context Rules
 
@@ -60,3 +62,4 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 - Do NOT proceed past 03-confirm.md until the restat has been explicitly confirmed.
 - Do NOT print full file contents (DESIGN.md, SESSION.md, git output, command logs) in the conversation unless the user explicitly asks to see them.
 - Do NOT restate the full interview history or the full restat more than once per confirmation cycle.
+- `DESIGN.md` is written in Romanian first and must be translated to English before the commit in `04-write-and-handoff.md` — never commit or hand off with a Romanian `DESIGN.md` still on disk.

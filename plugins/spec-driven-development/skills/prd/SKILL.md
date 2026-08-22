@@ -15,7 +15,7 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — questions, seam confirmations, granularity choices, status updates — exclusively in Romanian, regardless of the language `SPEC.md` was written in.
 
-All deliverables this skill writes (`docs/<idea-slug>-PRD.md`, `docs/<idea-slug>-ISSUE-N.md`, commit messages) must always be written in English, independent of the Romanian dialogue above.
+`docs/<idea-slug>-PRD.md` and `docs/<idea-slug>-ISSUE-N.md` start in Romanian too: `02-write-prd.md` and `04-write-issues.md` write the initial drafts in Romanian so the user reviews and approves them in the same language as the rest of the conversation. The moment the user gives explicit approval on each, translate that file (or set of files) in place into English — see those steps for the translation instructions. `03-issue-breakdown.md` therefore always receives an English-language `PRD.md`, and the commit in `04-write-issues.md` always commits English-language files. From that point on, everything downstream — the committed docs, commit messages, and the handoff to `plan` — is in English, because `plan` and the rest of the plugin's tooling work in English.
 
 ## Invocation
 
@@ -57,3 +57,4 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 - Do NOT push anything to GitHub.
 - Do NOT write code.
 - Do NOT invoke `writing-plans` or any implementation skill.
+- `PRD.md` and `ISSUE-N.md` are written in Romanian first — never hand off to `03-issue-breakdown.md` with a Romanian `PRD.md` still on disk, and never commit in `04-write-issues.md` with any `ISSUE-N.md` still in Romanian.
