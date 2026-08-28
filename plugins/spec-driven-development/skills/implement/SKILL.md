@@ -1,6 +1,6 @@
 ---
 name: implement
-description: Implements a TDD plan from a PLAN.md or PLAN-N.md file. Requires Bypass Permissions mode before starting. Invokes executing-plans and verifies all tests pass. Use when user says "implement me", "implement this plan", or wants to execute a plan file produced by /plan-me.
+description: Implements a TDD plan from a PLAN.md or PLAN-N.md file. Invokes executing-plans and verifies all tests pass. Use when user says "implement me", "implement this plan", or wants to execute a plan file produced by /plan-me.
 ---
 
 # Implement-Me — Plan to Working Code
@@ -25,17 +25,6 @@ Pass the plan file path explicitly:
 > `/implement-me docs/<idea-slug>-PLAN-N.md`
 
 If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/auth-forms-PLAN.md` or `docs/auth-forms-PLAN-1.md`."*
-
-## Before Starting
-
-One prerequisite that the user must complete manually before re-invoking this skill:
-
-1. **Enable Bypass Permissions** — activate via the shield icon in the Claude Code UI, or pass `--dangerously-skip-permissions` when launching Claude Code from the CLI. This allows uninterrupted execution without permission prompts on every file write or command.
-
-Tell the user:
-> *"Before I start: have you enabled Bypass Permissions (shield icon or `--dangerously-skip-permissions`)? Confirm and I'll proceed."*
-
-If the user confirms, proceed. If not, wait.
 
 ## Output and Context Rules
 
@@ -177,7 +166,6 @@ If the plan is a plain `docs/<idea-slug>-PLAN.md` (SPEC- or PRD-derived, no issu
 
 ## Hard Rules
 
-- Do NOT start without user confirmation of Bypass Permissions.
 - Do NOT run implementation or tests inline — always dispatch to subagents via the Agent tool, except for the second-stall inline takeover defined in **Subagent Timeout & Escalation**.
 - Do NOT modify tests to make them pass — fix the implementation instead.
 - Do NOT offer to merge, create a PR, or clean up branches/worktrees — that belongs in `/verify`, after the implementation has been validated.
