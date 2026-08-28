@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: Divergent/convergent exploration of the solution space before writing a spec. Use when intent is known but direction is unclear. Reads DESIGN.md if available. Produces docs/<slug>-IDEATE.md. Handoff goes to sdd:spec.
+description: Divergent/convergent exploration of the solution space before writing a spec. Use when intent is known but direction is unclear. Reads DESIGN.md if available. Produces docs/<feature-id>-<slug>-IDEATE.md. Handoff goes to sdd:spec.
 ---
 
 # Ideate — Solution Space Exploration
@@ -15,16 +15,22 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 Conduct all dialogue with the user — questions, confirmations, status updates — exclusively in Romanian, regardless of the language the input document or user description was written in.
 
-`docs/<idea-slug>-SESSION.md` is a scratch file that never leaves this skill and is deleted before handoff (see Output below) — write it in Romanian, matching the dialogue it mirrors.
+`docs/<feature-id>-<idea-slug>-SESSION.md` is a scratch file that never leaves this skill and is deleted before handoff (see Output below) — write it in Romanian, matching the dialogue it mirrors.
 
-`docs/<idea-slug>-IDEATE.md` starts in Romanian too: `steps/05-sharpen.md` writes the initial draft in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval, translate the file in place into English, before handing off to `steps/06-commit-and-handoff.md` — see that step for the translation instruction. From that point on the committed `IDEATE.md` and its handoff to `sdd:spec` are in English, because the rest of the plugin's tooling (and the spec skill's own artifacts) works in English.
+`docs/<feature-id>-<idea-slug>-IDEATE.md` starts in Romanian too: `steps/05-sharpen.md` writes the initial draft in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval, translate the file in place into English, before handing off to `steps/06-commit-and-handoff.md` — see that step for the translation instruction. From that point on the committed `IDEATE.md` and its handoff to `sdd:spec` are in English, because the rest of the plugin's tooling (and the spec skill's own artifacts) works in English.
 
 ## Invocation
 
 ```
-/sdd:ideate docs/<slug>-DESIGN.md    ← recommended: starts from confirmed intent
-/sdd:ideate                           ← no input: derive slug interactively
+/sdd:ideate docs/<feature-id>-<slug>-DESIGN.md    ← recommended: starts from confirmed intent
+/sdd:ideate                                        ← no input: derive slug interactively
 ```
+
+The input path (if given) already carries `<feature-id>` — this skill's own outputs (IDEATE.md, SESSION.md) reuse that exact same id, since IDEATE.md belongs to the same feature as the DESIGN.md it followed (see `steps/01-slug-and-branch.md`).
+
+## Feature ID Prefix
+
+Every file this skill writes under `docs/` is named `<feature-id>-<idea-slug>-TYPE.md`. `<feature-id>` identifies the feature (this slug) — it's the same id the upstream DESIGN.md (if any) already carries, or a freshly assigned one if this slug has never been seen before. It is never part of the slug itself: the slug alone names branches and tags (see `sdd:finalize`). `steps/01-slug-and-branch.md` computes it right after the slug is confirmed.
 
 ## Output and Context Rules
 
@@ -33,8 +39,8 @@ This skill generates lists (variations, directions) — the risk here is genuine
 - Phase 1 (diverge): generate at most 5–8 variations, never more. Each variation is one label + one line — not a paragraph. Do not justify every variation at length; a single sharp sentence per idea is enough.
 - Phase 2 (converge): cluster into at most 2–3 directions. Present each direction's stress-test (user value, feasibility, differentiation) and hidden assumptions as short bullets, not prose paragraphs — one line per bullet.
 - Phase 3 (sharpen): keep "Recommended Direction" to 2–3 paragraphs max, as already specified in `steps/05-sharpen.md`. Do not restate the full Phase 1/2 history inside IDEATE.md — only the confirmed outcome.
-- When reading an upstream `docs/<slug>-DESIGN.md` (`steps/02-read-upstream.md`), do not print its contents back to the user — announce that it was found and used as seed, nothing more.
-- After writing `docs/<idea-slug>-IDEATE.md`, do not print its full contents in the console — the review request already points the user at the file path.
+- When reading an upstream `docs/<feature-id>-<slug>-DESIGN.md` (`steps/02-read-upstream.md`), do not print its contents back to the user — announce that it was found and used as seed, nothing more.
+- After writing `docs/<feature-id>-<idea-slug>-IDEATE.md`, do not print its full contents in the console — the review request already points the user at the file path.
 - Read files under `steps/` one at a time, immediately before executing that step — not all seven upfront.
 - Never dump raw file contents, git output, or command logs into the conversation. State the one-line conclusion instead.
 - Between phases, give a one-line status update, not a recap of everything generated so far.
@@ -54,14 +60,14 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 
 ## Output
 
-- `docs/<idea-slug>-IDEATE.md` — structured direction document. Written once, not echoed back to the user after writing.
-- `docs/<idea-slug>-SESSION.md` — scratch file used only to survive context compaction mid-session; deleted (not committed) once IDEATE.md is written. Never printed to the user.
+- `docs/<feature-id>-<idea-slug>-IDEATE.md` — structured direction document. Written once, not echoed back to the user after writing.
+- `docs/<feature-id>-<idea-slug>-SESSION.md` — scratch file used only to survive context compaction mid-session; deleted (not committed) once IDEATE.md is written. Never printed to the user.
 
 ## Hard Rules
 
 - Do NOT skip Phase 1 and 2 and jump straight to Phase 3
 - Do NOT validate weak ideas without pushing back
-- Do NOT write `docs/<idea-slug>-IDEATE.md` before Phase 2 direction is confirmed by the user
+- Do NOT write `docs/<feature-id>-<idea-slug>-IDEATE.md` before Phase 2 direction is confirmed by the user
 - Do NOT write code or invoke other skills
 - Do NOT generate more than 5–8 variations in Phase 1 or more than 2–3 directions in Phase 2
 - Do NOT print full file contents (DESIGN.md, IDEATE.md, SESSION.md, git output, command logs) in the conversation unless the user explicitly asks to see them

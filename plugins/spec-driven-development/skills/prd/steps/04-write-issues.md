@@ -4,7 +4,7 @@
 
 **Does:**
 
-Write issues in dependency order (blockers first). For each approved issue, write directly to `docs/<idea-slug>-ISSUE-N.md`, **in Romanian**, without displaying its full content in the console. After all files are written, tell the user: *"N fișiere de issue scrise în `docs/<idea-slug>-ISSUE-1.md` … `docs/<idea-slug>-ISSUE-N.md`. Te rog să le revizuiești și să-mi spui dacă ai modificări sau dacă le aprobi."* If the user provides feedback, update the relevant files (still in Romanian) and ask again.
+Write issues in dependency order (blockers first). For each approved issue, write directly to `docs/<feature-id>-<idea-slug>-ISSUE-N.md`, **in Romanian**, without displaying its full content in the console. After all files are written, tell the user: *"N fișiere de issue scrise în `docs/<feature-id>-<idea-slug>-ISSUE-1.md` … `docs/<feature-id>-<idea-slug>-ISSUE-N.md`. Te rog să le revizuiești și să-mi spui dacă ai modificări sau dacă le aprobi."* If the user provides feedback, update the relevant files (still in Romanian) and ask again.
 
 Issue structure:
 
@@ -12,7 +12,7 @@ Issue structure:
 # <Feature Name> — Issue N: <Title>
 
 **Type:** AFK / HITL
-**Blocked by:** None / `<idea-slug>-ISSUE-N.md`
+**Blocked by:** None / `<feature-id>-<idea-slug>-ISSUE-N.md`
 
 ## Ce trebuie construit
 
@@ -30,7 +30,7 @@ o decizie mai precis decât proza — include-l inline și notează că provine 
 
 **Once approved — translate to English:**
 
-Only after the user explicitly approves all issue files: translate every `docs/<idea-slug>-ISSUE-N.md` in full into English, preserving the original header structure (`## What to build`, `## Acceptance criteria`), and overwrite each file with its English version — do not keep the Romanian copies on disk. This is a faithful rendering of what was just approved, not a content change, so it doesn't need a separate approval round. Do not print the translated content in the console.
+Only after the user explicitly approves all issue files: translate every `docs/<feature-id>-<idea-slug>-ISSUE-N.md` in full into English, preserving the original header structure (`## What to build`, `## Acceptance criteria`), and overwrite each file with its English version — do not keep the Romanian copies on disk. This is a faithful rendering of what was just approved, not a content change, so it doesn't need a separate approval round. Do not print the translated content in the console.
 
 Only commit all docs (PRD + issues — both already translated to English) to git when the user **explicitly approves** (e.g. "looks good", "approve", "done", "ok"). Do NOT commit automatically. Do NOT commit while any of these files is still in Romanian.
 

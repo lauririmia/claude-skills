@@ -15,22 +15,26 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — questions, confirmations, status updates — exclusively in Romanian, regardless of the language the plan was written in.
 
-All deliverables this skill writes (`docs/<idea-slug>-ISSUE-N-LOG.md`, code, code comments, commit messages) must always be written in English, independent of the Romanian dialogue above. Subagent dispatch prompts (Steps 2 and 4) also stay in English — they are instructions to other Claude agents, not user-facing dialogue.
+All deliverables this skill writes (`docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md`, code, code comments, commit messages) must always be written in English, independent of the Romanian dialogue above. Subagent dispatch prompts (Steps 2 and 4) also stay in English — they are instructions to other Claude agents, not user-facing dialogue.
 
 ## Invocation
 
 Pass the plan file path explicitly:
 
-> `/implement-me docs/<idea-slug>-PLAN.md`
-> `/implement-me docs/<idea-slug>-PLAN-N.md`
+> `/implement-me docs/<feature-id>-<idea-slug>-PLAN.md`
+> `/implement-me docs/<feature-id>-<idea-slug>-PLAN-N.md`
 
-If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/auth-forms-PLAN.md` or `docs/auth-forms-PLAN-1.md`."*
+If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/01-auth-forms-PLAN.md` or `docs/01-auth-forms-PLAN-1.md`."*
+
+## Feature ID Prefix
+
+Every file under `docs/` for a feature shares one `<feature-id>`, assigned once when the slug was first seen. This skill reuses the SAME `<feature-id>` parsed from the plan filename (Step 1) for the one new file it writes (`ISSUE-N-LOG.md`, Step 6) and for locating the feature's `SPEC.md` (Step 3) — never a different id.
 
 ## Output and Context Rules
 
 These rules govern everything this skill prints to the main conversation — subagent dispatch prompts (which go to a clean subagent context) are unaffected.
 
-- **Never paste full file contents into the main conversation.** Subagents receive the plan's absolute path and read it themselves, in their own context; in the main thread, refer to files by path (`docs/<idea-slug>-PLAN.md`), not by quoting them.
+- **Never paste full file contents into the main conversation.** Subagents receive the plan's absolute path and read it themselves, in their own context; in the main thread, refer to files by path (`docs/<feature-id>-<idea-slug>-PLAN.md`), not by quoting them.
 - **Subagent reports must come back as short summaries**, not raw logs: task count done/total, pass/fail test counts, and a one-line verdict. Do not relay a subagent's full internal transcript.
 - **On test failures, show only the essentials**: failing test names and a 1–3 line error excerpt each (assertion message, not full stack trace). Full stack traces or raw command output are shown only if the user explicitly asks for them.
 - **Batch divergences instead of dumping them.** If Step 3 finds more than ~5 divergences, first give a one-line count + the 3–5 most significant ones, then ask whether to walk through the rest one by one — don't flood the chat with every proposed edit at once.
@@ -52,9 +56,9 @@ This escalation is per-task: a fresh task dispatched later in the skill (e.g. th
 
 Read the file at the provided path. If it does not exist, stop and tell the user.
 
-Extract `<idea-slug>` from the filename:
-- `docs/auth-forms-PLAN.md` → slug = `auth-forms`
-- `docs/auth-forms-PLAN-1.md` → slug = `auth-forms`, plan = `1`
+Extract `<feature-id>`, `<idea-slug>`, and (for issue plans) the plan number from the filename:
+- `docs/01-auth-forms-PLAN.md` → feature-id = `01`, slug = `auth-forms`
+- `docs/01-auth-forms-PLAN-1.md` → feature-id = `01`, slug = `auth-forms`, plan = `1`
 
 ### Step 2 — Dispatch implementation subagent
 
@@ -89,9 +93,9 @@ Apply the **Subagent Timeout & Escalation** rules above to this dispatch. Once i
 
 ### Step 3 — Spec divergence check
 
-After the implementation subagent completes, read `docs/<idea-slug>-SPEC.md` and run `git diff` to compare the current working tree against the spec. Read only what's needed to spot divergences — skim `git diff` for changed sections rather than re-reading the entire spec and full diff verbatim into your response.
+After the implementation subagent completes, read `docs/<feature-id>-<idea-slug>-SPEC.md` (same `<feature-id>` as the plan read in Step 1) and run `git diff` to compare the current working tree against the spec. Read only what's needed to spot divergences — skim `git diff` for changed sections rather than re-reading the entire spec and full diff verbatim into your response.
 
-For each divergence (architectural decision changed, scope adjusted, data model differs from what the spec describes), propose a concrete edit to `docs/<idea-slug>-SPEC.md`. Present proposed edits per the batching rule in **Output and Context Rules**, and wait for approval or rejection before continuing.
+For each divergence (architectural decision changed, scope adjusted, data model differs from what the spec describes), propose a concrete edit to `docs/<feature-id>-<idea-slug>-SPEC.md`. Present proposed edits per the batching rule in **Output and Context Rules**, and wait for approval or rejection before continuing.
 
 Only after the user has reviewed all proposed spec edits (or confirmed there are none), proceed to the testing subagent.
 
@@ -134,13 +138,13 @@ Show the user only the current round's pass/fail counts between iterations, not 
 
 When the testing subagent reports all tests pass, say:
 
-> *"Implementation complete. All tests defined in `docs/<idea-slug>-PLAN.md` pass."*
+> *"Implementation complete. All tests defined in `docs/<feature-id>-<idea-slug>-PLAN.md` pass."*
 
 ### Step 6 — Write issue log
 
-Only if the plan file is `docs/<idea-slug>-PLAN-N.md` (an issue-derived plan, not a plain `docs/<idea-slug>-PLAN.md`):
+Only if the plan file is `docs/<feature-id>-<idea-slug>-PLAN-N.md` (an issue-derived plan, not a plain `docs/<feature-id>-<idea-slug>-PLAN.md`):
 
-Write `docs/<idea-slug>-ISSUE-N-LOG.md` (overwrite if it already exists — regenerate the whole file, do not merge with a prior version):
+Write `docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md` (same `<feature-id>` as the plan — overwrite if it already exists — regenerate the whole file, do not merge with a prior version):
 
 ```markdown
 # Issue N Log: <issue title>
@@ -162,7 +166,7 @@ Not yet verified
 
 Base `<issue title>` and the content on the actual final code/worktree state produced by Steps 2–4 — not the plan's intended work — in case implementation diverged from the plan (this is what Step 3's divergence check already surfaces).
 
-If the plan is a plain `docs/<idea-slug>-PLAN.md` (SPEC- or PRD-derived, no issue number), skip Step 6 entirely — no log file is written.
+If the plan is a plain `docs/<feature-id>-<idea-slug>-PLAN.md` (SPEC- or PRD-derived, no issue number), skip Step 6 entirely — no log file is written.
 
 ## Hard Rules
 

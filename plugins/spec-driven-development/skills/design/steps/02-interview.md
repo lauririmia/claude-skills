@@ -1,6 +1,6 @@
 # Step 02 — Interview Loop
 
-**Reads:** `<idea-slug>` and `docs/<idea-slug>-SESSION.md` from `01-slug-and-branch.md`.
+**Reads:** `<idea-slug>` and `docs/<feature-id>-<idea-slug>-SESSION.md` from `01-slug-and-branch.md`.
 
 **Does:**
 
@@ -31,4 +31,4 @@ This interview loop keeps "one question per message" as a hard rule. The default
 
 **Stop condition:** You can confidently predict the user's reaction to the next three questions you would ask.
 
-**Hands off:** A set of confirmed answers (recorded in `docs/<idea-slug>-SESSION.md` under Decisions Reached) to `03-confirm.md`.
+**Hands off:** A set of confirmed answers (recorded in `docs/<feature-id>-<idea-slug>-SESSION.md` under Decisions Reached) to `03-confirm.md`.

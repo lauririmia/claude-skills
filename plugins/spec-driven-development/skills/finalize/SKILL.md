@@ -101,8 +101,8 @@ If Step 4 resulted in anything other than a **local merge into the repo's main b
 If Step 4 did merge locally into the main branch, tag that merge commit with the feature's slug:
 
 1. **Determine the slug.** Two sources, in order of preference:
-   - The current branch name, if it carries the slug directly (branches created by `superpowers:using-git-worktrees` or other skills in this plugin are typically named after the slug, e.g. `auth-forms` or `feature/auth-forms`).
-   - `docs/<slug>-SPEC.md` / `docs/<slug>-PLAN.md` / `docs/<slug>-PLAN-N.md` files touched on this branch (`git diff --name-only <merge-base>...HEAD -- docs/`) — the slug is the filename prefix before `-SPEC`/`-PLAN`.
+   - The current branch name, if it carries the slug directly (branches created by `superpowers:using-git-worktrees` or other skills in this plugin are typically named after the slug, e.g. `auth-forms` or `feature/auth-forms`) — branch names never carry a feature-id prefix, only the slug.
+   - `docs/<feature-id>-<slug>-SPEC.md` / `docs/<feature-id>-<slug>-PLAN.md` / `docs/<feature-id>-<slug>-PLAN-N.md` files touched on this branch (`git diff --name-only <merge-base>...HEAD -- docs/`) — the slug is the filename with both the leading two-digit `<feature-id>-` prefix AND the trailing `-SPEC`/`-PLAN`/`-PLAN-N` suffix stripped (e.g. `03-auth-forms-PLAN-1.md` → `auth-forms`). The tag itself must be the bare slug — never include `<feature-id>`.
 
    If both sources point to the same slug, or only one source yields a slug, use it directly — no need to ask. If they disagree, or neither yields anything, ask the user once, briefly: *"Care e slug-ul feature-ului pentru tag? (ex: auth-forms)"* — do not let this block or unwind the merge that already happened; the tag can be added after the fact once you have an answer.
 

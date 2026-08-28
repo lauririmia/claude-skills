@@ -17,17 +17,21 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 Conduct all dialogue with the user — questions, proposed approaches, confirmations, status updates — exclusively in Romanian, regardless of the language the project/feature description was written in.
 
-`docs/<idea-slug>-SESSION.md` is a scratch file that never leaves Act 1 and is deleted before Resolution (see Persistence and Resolution below) — write it in Romanian, matching the dialogue it mirrors.
+`docs/<feature-id>-<idea-slug>-SESSION.md` is a scratch file that never leaves Act 1 and is deleted before Resolution (see Persistence and Resolution below) — write it in Romanian, matching the dialogue it mirrors.
 
-`docs/<idea-slug>-SPEC.md` and `docs/<idea-slug>-SPEC-REVIEW.md` start in Romanian too: Step 5 writes the initial spec in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval (Step 5, before Act 2 begins), translate both files in place into English — see Step 5b. From that point on, everything related to these two files (further edits, the Codex review exchange, the append-only log, commit messages) stays in English, because Act 2 hands `SPEC.md`'s content inline to Codex and the rest of the skill's tooling assumes English. Internal reasoning stays in English throughout.
+`docs/<feature-id>-<idea-slug>-SPEC.md` and `docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md` start in Romanian too: Step 5 writes the initial spec in Romanian so the user reviews and approves it in the same language as the rest of the conversation. The moment the user gives explicit approval (Step 5, before Act 2 begins), translate both files in place into English — see Step 5b. From that point on, everything related to these two files (further edits, the Codex review exchange, the append-only log, commit messages) stays in English, because Act 2 hands `SPEC.md`'s content inline to Codex and the rest of the skill's tooling assumes English. Internal reasoning stays in English throughout.
+
+## Feature ID Prefix
+
+Every file this skill writes under `docs/` is named `<feature-id>-<idea-slug>-TYPE.md`. `<feature-id>` identifies the feature (this slug) — the same id any upstream DESIGN.md/IDEATE.md for this slug already carries, or a freshly assigned one if this slug has never been seen before (computed at CHECKPOINT 2 below). It is never part of the slug itself: the slug alone names branches, tags, and `feature/<idea-slug>` (see Checkpoint 3 and `sdd:finalize`).
 
 ## Persistence
 
-Maintain `docs/<idea-slug>-SESSION.md` throughout the session. Creation is handled by ⛔ CHECKPOINT 2 — this section describes upkeep only. This is a scratch file that only exists to survive a context compaction mid-session — it is deleted, never committed, once the deliverables are finalized (see Resolution below).
+Maintain `docs/<feature-id>-<idea-slug>-SESSION.md` throughout the session. Creation is handled by ⛔ CHECKPOINT 2 — this section describes upkeep only. This is a scratch file that only exists to survive a context compaction mid-session — it is deleted, never committed, once the deliverables are finalized (see Resolution below).
 
 **During the session:** update `Decisions Reached` and `Open Questions` after each major brainstorming checkpoint (approach chosen, design section approved, etc.).
 
-**When Act 1 concludes:** append `## Final Spec Path: docs/<idea-slug>-SPEC.md` to the session file.
+**When Act 1 concludes:** append `## Final Spec Path: docs/<feature-id>-<idea-slug>-SPEC.md` to the session file.
 
 ## Output and Context Rules
 
@@ -64,9 +68,17 @@ Call `EnterPlanMode` immediately.
 
    Propose the slug to the user and **wait for explicit confirmation before continuing**. Do NOT proceed until the user approves or corrects it.
 
-#### ⛔ CHECKPOINT 2 — Session file (MANDATORY, do not skip)
+#### ⛔ CHECKPOINT 2 — Feature ID and session file (MANDATORY, do not skip)
 
-Immediately after the slug is confirmed, create `docs/<idea-slug>-SESSION.md`. Do this **now** — before the branch question, before brainstorming, before anything else. Do not defer or skip this because the session feels "short" or "simple": short sessions still get interrupted by context compaction.
+Immediately after the slug is confirmed, determine `<feature-id>`:
+
+1. List `docs/` for any file matching `[0-9][0-9]-<idea-slug>-*.md`.
+2. If any match, this slug already has a feature id (from this same interrupted spec session, or from an earlier DESIGN/IDEATE stage for it) — use it as `<feature-id>`.
+3. If none match, this slug has never been seen before: list `docs/` for **all** files matching `[0-9][0-9]-*.md` (any slug). `<feature-id>` is the highest two-digit prefix found across all of them, plus one — or `01` if `docs/` has no numbered files at all yet.
+
+Reuse this same `<feature-id>` for every file this skill writes in this run.
+
+Create `docs/<feature-id>-<idea-slug>-SESSION.md`. Do this **now** — before the branch question, before brainstorming, before anything else. Do not defer or skip this because the session feels "short" or "simple": short sessions still get interrupted by context compaction.
 
 ```markdown
 # Spec: <Idea Name>
@@ -82,7 +94,7 @@ Started: <YYYY-MM-DD>
 <!-- updated as new questions surface -->
 ```
 
-If the file already exists, read it and resume — skip decisions already settled.
+If `docs/<feature-id>-<idea-slug>-SESSION.md` already exists (found by the scan above), read it and resume — skip decisions already settled.
 
 #### ⛔ CHECKPOINT 3 — Branch strategy (MANDATORY, do not skip)
 
@@ -96,9 +108,9 @@ If the file already exists, read it and resume — skip decisions already settle
 
 ### Step 4 — Run brainstorming
 
-**Before brainstorming**, check `docs/` for upstream artifacts from this slug:
-1. If `docs/<slug>-IDEATE.md` exists: announce *"Found `docs/<slug>-IDEATE.md` — using it as the starting point for brainstorming."* Start brainstorming from its content instead of the raw user description.
-2. Else if `docs/<slug>-DESIGN.md` exists: announce *"Found `docs/<slug>-DESIGN.md` — using it as the starting point for brainstorming."* Start brainstorming from its content instead of the raw user description.
+**Before brainstorming**, check `docs/` for upstream artifacts from this slug (same `<feature-id>` determined at Checkpoint 2, since they belong to the same feature):
+1. If `docs/<feature-id>-<slug>-IDEATE.md` exists: announce *"Found `docs/<feature-id>-<slug>-IDEATE.md` — using it as the starting point for brainstorming."* Start brainstorming from its content instead of the raw user description.
+2. Else if `docs/<feature-id>-<slug>-DESIGN.md` exists: announce *"Found `docs/<feature-id>-<slug>-DESIGN.md` — using it as the starting point for brainstorming."* Start brainstorming from its content instead of the raw user description.
 3. If neither exists: start brainstorming from the user's raw description (current behavior).
 
 **Before invoking brainstorming**, surface all implicit assumptions the user has not stated:
@@ -129,7 +141,7 @@ Do not write a spec section for an objective that cannot be directly verified.
 Invoke `superpowers:brainstorming` with **two overrides**: do NOT invoke `writing-plans` at the end; and do NOT display the spec content in the console or commit automatically — see Step 5.
 
 ### Step 5 — Write SPEC.md
-After the brainstorming is complete, write a structured summary directly to `docs/<idea-slug>-SPEC.md`, **in Romanian**, without displaying its full content in the console:
+After the brainstorming is complete, write a structured summary directly to `docs/<feature-id>-<idea-slug>-SPEC.md`, **in Romanian**, without displaying its full content in the console:
 
 ```markdown
 # Spec: <feature>
@@ -151,15 +163,15 @@ _Blocat prin brainstorming — de Claude + <user>_
 <limite explicite stabilite în timpul brainstorming-ului>
 ```
 
-Initialize `docs/<idea-slug>-SPEC-REVIEW.md`, also in Romanian:
+Initialize `docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md`, also in Romanian:
 ```
 # Jurnal Review Spec: <feature>
 Act 1 (brainstorming) finalizat — spec blocat cu userul. MAX_ROUNDS=<n>.
 ```
 
 After writing both files:
-1. Tell the user: *"Specul a fost scris în `docs/<idea-slug>-SPEC.md`. Te rog să-l revizuiești și să-mi spui dacă ai modificări sau dacă îl aprobi."*
-2. If the user provides feedback, update `docs/<idea-slug>-SPEC.md` accordingly (still in Romanian) and ask again.
+1. Tell the user: *"Specul a fost scris în `docs/<feature-id>-<idea-slug>-SPEC.md`. Te rog să-l revizuiești și să-mi spui dacă ai modificări sau dacă îl aprobi."*
+2. If the user provides feedback, update `docs/<feature-id>-<idea-slug>-SPEC.md` accordingly (still in Romanian) and ask again.
 3. Only proceed once the user **explicitly approves** (e.g. "arată bine", "aprob", "gata", "ok"). Do NOT proceed automatically.
 4. Once approved, run **Step 5b** before touching git or Act 2.
 
@@ -167,8 +179,8 @@ After writing both files:
 
 The user just approved the Romanian spec — now bring it in line with the rest of the skill, which runs in English from here on (Act 2 hands `SPEC.md`'s content inline to Codex, and the log/commit conventions are English):
 
-1. Translate `docs/<idea-slug>-SPEC.md` in full into English, preserving the same structure (`# Spec: <feature>`, `_Locked via brainstorming — by Claude + <user>_`, `## Goal`, `## Approach`, `## Key decisions & tradeoffs`, `## Risks / open questions`, `## Out of scope`). Overwrite the file with the English version — do not keep the Romanian copy on disk.
-2. Translate `docs/<idea-slug>-SPEC-REVIEW.md`'s header into English (`# Spec Review Log: <feature>` / `Act 1 (brainstorming) complete — spec locked with user. MAX_ROUNDS=<n>.`) and overwrite it the same way.
+1. Translate `docs/<feature-id>-<idea-slug>-SPEC.md` in full into English, preserving the same structure (`# Spec: <feature>`, `_Locked via brainstorming — by Claude + <user>_`, `## Goal`, `## Approach`, `## Key decisions & tradeoffs`, `## Risks / open questions`, `## Out of scope`). Overwrite the file with the English version — do not keep the Romanian copy on disk.
+2. Translate `docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md`'s header into English (`# Spec Review Log: <feature>` / `Act 1 (brainstorming) complete — spec locked with user. MAX_ROUNDS=<n>.`) and overwrite it the same way.
 3. Do not display the translated content in the console — same discipline as Step 5.
 4. Only commit to git when the user **explicitly approves** (e.g. "looks good", "approve", "done", "ok"). Do NOT commit automatically. This is the same approval already captured at the end of Step 5 — the translation is a faithful rendering of what was just approved, not a content change, so it doesn't require asking again.
 5. After the commit (or user approval without changes), proceed to Act 2 with the now-English `SPEC.md`.
@@ -186,8 +198,8 @@ The user just approved the Romanian spec — now bring it in line with the rest 
 | Var | Default | Meaning |
 |-----|---------|---------|
 | `MAX_ROUNDS` | `5` | Hard cap on review rounds |
-| `SPEC_FILE` | `docs/<idea-slug>-SPEC.md` | The spec Act 1 produced |
-| `LOG_FILE` | `docs/<idea-slug>-SPEC-REVIEW.md` | Append-only argument transcript |
+| `SPEC_FILE` | `docs/<feature-id>-<idea-slug>-SPEC.md` | The spec Act 1 produced |
+| `LOG_FILE` | `docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md` | Append-only argument transcript |
 
 ### Review prompt strategy
 
@@ -246,22 +258,22 @@ echo "<what changed, what was rejected, why>" >> "$LOG_FILE"
 Title:     <feature title>
 Slug:      <idea-slug>
 Mode:      Branch | Worktree | Main
-Spec file: docs/<idea-slug>-SPEC.md
-Log file:  docs/<idea-slug>-SPEC-REVIEW.md
+Spec file: docs/<feature-id>-<idea-slug>-SPEC.md
+Log file:  docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md
 Rounds:    N
 ```
-  `docs/<idea-slug>-SESSION.md` exists only to survive a context compaction mid-session — once SPEC.md and SPEC-REVIEW.md are finalized and about to be committed, its job is done. Delete it rather than committing it, so it never pollutes git history as a scratch file:
+  `docs/<feature-id>-<idea-slug>-SESSION.md` exists only to survive a context compaction mid-session — once SPEC.md and SPEC-REVIEW.md are finalized and about to be committed, its job is done. Delete it rather than committing it, so it never pollutes git history as a scratch file:
   ```bash
-  rm -f docs/<idea-slug>-SESSION.md
+  rm -f docs/<feature-id>-<idea-slug>-SESSION.md
   ```
 
   Then propose a git commit — list the files to be staged and ask for confirmation:
-  - `docs/<idea-slug>-SPEC.md`
-  - `docs/<idea-slug>-SPEC-REVIEW.md`
+  - `docs/<feature-id>-<idea-slug>-SPEC.md`
+  - `docs/<feature-id>-<idea-slug>-SPEC-REVIEW.md`
 
   On user approval, commit with message `docs: finalize <idea-slug> spec (brainstorming + Codex review)`. Do NOT push.
 
-  Then recommend a next step instead of asking a generic "ready to move on?" — assess whether the finished `docs/<idea-slug>-SPEC.md` describes one cohesive unit of work or would benefit from being broken into independently shippable slices first:
+  Then recommend a next step instead of asking a generic "ready to move on?" — assess whether the finished `docs/<feature-id>-<idea-slug>-SPEC.md` describes one cohesive unit of work or would benefit from being broken into independently shippable slices first:
   - **Recommend `/sdd:plan`** (the common case) when the spec describes a single vertical slice — even a multi-step feature — that one TDD plan can carry end-to-end and ship as one PR.
   - **Recommend `/sdd:prd`** instead when the spec itself describes 2+ independently shippable, user-visible behaviors — distinct user journeys, phases the spec already calls out separately, or subsystems that don't share a single code path. `/sdd:prd` breaks it into vertical-slice issues, each of which then gets its own `/sdd:plan` pass.
 

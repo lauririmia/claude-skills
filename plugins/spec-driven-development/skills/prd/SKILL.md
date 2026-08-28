@@ -15,15 +15,19 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — questions, seam confirmations, granularity choices, status updates — exclusively in Romanian, regardless of the language `SPEC.md` was written in.
 
-`docs/<idea-slug>-PRD.md` and `docs/<idea-slug>-ISSUE-N.md` start in Romanian too: `02-write-prd.md` and `04-write-issues.md` write the initial drafts in Romanian so the user reviews and approves them in the same language as the rest of the conversation. The moment the user gives explicit approval on each, translate that file (or set of files) in place into English — see those steps for the translation instructions. `03-issue-breakdown.md` therefore always receives an English-language `PRD.md`, and the commit in `04-write-issues.md` always commits English-language files. From that point on, everything downstream — the committed docs, commit messages, and the handoff to `plan` — is in English, because `plan` and the rest of the plugin's tooling work in English.
+`docs/<feature-id>-<idea-slug>-PRD.md` and `docs/<feature-id>-<idea-slug>-ISSUE-N.md` start in Romanian too: `02-write-prd.md` and `04-write-issues.md` write the initial drafts in Romanian so the user reviews and approves them in the same language as the rest of the conversation. The moment the user gives explicit approval on each, translate that file (or set of files) in place into English — see those steps for the translation instructions. `03-issue-breakdown.md` therefore always receives an English-language `PRD.md`, and the commit in `04-write-issues.md` always commits English-language files. From that point on, everything downstream — the committed docs, commit messages, and the handoff to `plan` — is in English, because `plan` and the rest of the plugin's tooling work in English.
 
 ## Invocation
 
 The user must pass the SPEC.md file path explicitly:
 
-> `/prd-me docs/<idea-slug>-SPEC.md`
+> `/prd-me docs/<feature-id>-<idea-slug>-SPEC.md`
 
-If no path is provided, stop and ask: *"Please specify the SPEC.md file path, e.g. `docs/auth-forms-SPEC.md`."*
+If no path is provided, stop and ask: *"Please specify the SPEC.md file path, e.g. `docs/01-auth-forms-SPEC.md`."*
+
+## Feature ID Prefix
+
+Every file this skill writes under `docs/` (`PRD.md` and every `ISSUE-N.md`) is named `<feature-id>-<idea-slug>-TYPE.md`, reusing the SAME `<feature-id>` carried by the input `SPEC.md` filename — this PRD and its issues belong to the same feature as that spec, not a new one. `steps/00-read-and-explore.md` parses it directly from the input path.
 
 ## Output and Context Rules
 
@@ -32,7 +36,7 @@ These rules govern everything this skill prints to the main conversation, across
 - **Never paste full file contents into the chat.** SPEC.md, PRD.md, and ISSUE-N.md are written directly to disk and referenced by path (already the rule in `02-write-prd.md` and `04-write-issues.md`) — extend the same discipline to codebase exploration in `00-read-and-explore.md`: summarize what you found, don't quote whole files.
 - **Explore the codebase with targeted reads, not exhaustive ones.** Grep/search for the relevant seams first; read only the files or sections that inform the PRD, not entire directories.
 - **Issue and breakdown lists stay compact.** The numbered breakdown in `03-issue-breakdown.md` shows title/type/blocked-by only — no restating of PRD content per issue.
-- **Status updates are one line each** ("PRD written to `docs/<idea-slug>-PRD.md`", "3 issue files written") — no recap of prior steps.
+- **Status updates are one line each** ("PRD written to `docs/<feature-id>-<idea-slug>-PRD.md`", "3 issue files written") — no recap of prior steps.
 - **Default to the minimal useful output.** If unsure how much detail to show in dialogue, show less and offer to expand on request.
 
 ## Process
@@ -48,8 +52,8 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 
 ## Output
 
-- `docs/<idea-slug>-PRD.md` — structured PRD
-- `docs/<idea-slug>-ISSUE-1.md` … `docs/<idea-slug>-ISSUE-N.md` — one file per vertical slice
+- `docs/<feature-id>-<idea-slug>-PRD.md` — structured PRD
+- `docs/<feature-id>-<idea-slug>-ISSUE-1.md` … `docs/<feature-id>-<idea-slug>-ISSUE-N.md` — one file per vertical slice
 
 ## Hard Rules
 

@@ -4,7 +4,7 @@
 
 **Does:**
 
-Write directly to `docs/<idea-slug>-PRD.md`, **in Romanian**, without displaying its full content in the console. Just confirm the path. Then tell the user: *"PRD-ul a fost scris în `docs/<idea-slug>-PRD.md`. Te rog să-l revizuiești și să-mi spui dacă ai modificări înainte să trecem la descompunerea în issue-uri."* If the user provides feedback, update the file (still in Romanian) and ask again.
+Write directly to `docs/<feature-id>-<idea-slug>-PRD.md`, **in Romanian**, without displaying its full content in the console. Just confirm the path. Then tell the user: *"PRD-ul a fost scris în `docs/<feature-id>-<idea-slug>-PRD.md`. Te rog să-l revizuiești și să-mi spui dacă ai modificări înainte să trecem la descompunerea în issue-uri."* If the user provides feedback, update the file (still in Romanian) and ask again.
 
 The PRD structure to use:
 
@@ -52,7 +52,7 @@ Orice context adițional.
 
 ## Scope Boundary: What, Not How
 
-Applies to `docs/<slug>-PRD.md` only — NOT to `docs/<slug>-ISSUE-N.md` files, which may continue to inline a prototype snippet per the existing rule ("unless a prototype snippet encodes a decision more precisely than prose").
+Applies to `docs/<feature-id>-<slug>-PRD.md` only — NOT to `docs/<feature-id>-<slug>-ISSUE-N.md` files, which may continue to inline a prototype snippet per the existing rule ("unless a prototype snippet encodes a decision more precisely than prose").
 
 This rule is about *content*, not language — apply it to the Romanian draft, before translation. In the Enunțul problemei / Soluție / Poveștile utilizatorilor sections: no code snippets, no method/function names, no file paths, no internal module names (these stay recognizable regardless of the surrounding language, since identifiers aren't translated). User-facing or third-party platform/integration names ARE allowed where the user genuinely interacts with them (e.g. "autentificare cu Google", "export în Notion") — the boundary is *implementation technology* (how it's built), not *product surface* (what the user sees and touches).
 
@@ -62,8 +62,8 @@ The Implementation Decisions section may name modules, schemas, and API contract
 
 **Once approved — translate to English:**
 
-`03-issue-breakdown.md`, `04-write-issues.md`, and the `plan` skill that later consumes this PRD all work in English (the Scope Boundary rule above and the rest of the plugin's tooling are written against English content). Translate `docs/<idea-slug>-PRD.md` in full into English, preserving the original header structure (`## Problem Statement`, `## Solution`, `## User Stories`, `## Implementation Decisions`, `## Testing Decisions`, `## Out of Scope`, `## Further Notes`), and overwrite the file with the English version — do not keep the Romanian copy on disk. This is a faithful rendering of what the user just approved, not a content change, so it doesn't need a separate approval round. Do not print the translated content in the console.
+`03-issue-breakdown.md`, `04-write-issues.md`, and the `plan` skill that later consumes this PRD all work in English (the Scope Boundary rule above and the rest of the plugin's tooling are written against English content). Translate `docs/<feature-id>-<idea-slug>-PRD.md` in full into English, preserving the original header structure (`## Problem Statement`, `## Solution`, `## User Stories`, `## Implementation Decisions`, `## Testing Decisions`, `## Out of Scope`, `## Further Notes`), and overwrite the file with the English version — do not keep the Romanian copy on disk. This is a faithful rendering of what the user just approved, not a content change, so it doesn't need a separate approval round. Do not print the translated content in the console.
 
 **Stop condition:** User explicitly approves the PRD content (after the Scope Boundary scan), and the file has been translated to English on disk.
 
-**Hands off:** Approved, English-language `docs/<idea-slug>-PRD.md` to `03-issue-breakdown.md`.
+**Hands off:** Approved, English-language `docs/<feature-id>-<idea-slug>-PRD.md` to `03-issue-breakdown.md`.

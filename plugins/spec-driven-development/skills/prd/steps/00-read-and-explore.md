@@ -6,11 +6,13 @@
 
 ### Read the spec
 
-Read the file at the provided path. Extract `<idea-slug>` from the filename:
-- `docs/auth-forms-SPEC.md` → `idea-slug` = `auth-forms`
-- `docs/youtube-funnel-SPEC.md` → `idea-slug` = `youtube-funnel`
+Read the file at the provided path. Extract `<feature-id>` and `<idea-slug>` from the filename:
+- `docs/01-auth-forms-SPEC.md` → feature-id = `01`, idea-slug = `auth-forms`
+- `docs/02-youtube-funnel-SPEC.md` → feature-id = `02`, idea-slug = `youtube-funnel`
 
 If the file does not exist, stop and tell the user.
+
+Reuse this SAME `<feature-id>` for every file this skill writes (PRD and all issue files) — this PRD belongs to the same feature as the SPEC.md it was generated from, not a new one. Never mint a new id here.
 
 ### Explore the codebase
 
@@ -18,4 +20,4 @@ Explore the repo to understand current state. Search/grep for the relevant seams
 
 **Stop condition:** SPEC.md read, codebase explored.
 
-**Hands off:** `<idea-slug>`, SPEC.md content, and codebase context to `01-seams.md`.
+**Hands off:** `<feature-id>`, `<idea-slug>`, SPEC.md content, and codebase context to `01-seams.md`.

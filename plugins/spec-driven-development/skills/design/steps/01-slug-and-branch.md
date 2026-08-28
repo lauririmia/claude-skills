@@ -16,9 +16,17 @@ From the user's description, derive `<idea-slug>` using these rules:
 
 Propose the slug and **wait for explicit confirmation before continuing**.
 
-#### ⛔ CHECKPOINT 2 — Session file (MANDATORY, do not skip)
+#### ⛔ CHECKPOINT 2 — Feature ID and session file (MANDATORY, do not skip)
 
-Immediately after the slug is confirmed, create `docs/<idea-slug>-SESSION.md`:
+Immediately after the slug is confirmed, determine `<feature-id>`:
+
+1. List `docs/` for any file matching `[0-9][0-9]-<idea-slug>-*.md`.
+2. If any match, this slug already has a feature id — use it as `<feature-id>` (all files for this slug, from any pipeline stage, share one id).
+3. If none match, this slug has never been seen before: list `docs/` for **all** files matching `[0-9][0-9]-*.md` (any slug). `<feature-id>` is the highest two-digit prefix found across all of them, plus one — or `01` if `docs/` has no numbered files at all yet.
+
+Reuse this same `<feature-id>` for every file this skill writes in this run — do not recompute it per file.
+
+Create `docs/<feature-id>-<idea-slug>-SESSION.md`:
 
 ```markdown
 # Discover: <Idea Name>
@@ -34,7 +42,7 @@ Started: <YYYY-MM-DD>
 <!-- updated as new questions surface -->
 ```
 
-**Checkpoint invariant:** If `docs/<idea-slug>-SESSION.md` already exists, read it and resume — skip decisions already settled. Do not re-ask Checkpoint 1 or 2 if the session file shows them already resolved.
+**Checkpoint invariant:** If `docs/<feature-id>-<idea-slug>-SESSION.md` already exists (found by the scan above), read it and resume — skip decisions already settled. Do not re-ask Checkpoint 1 or 2 if the session file shows them already resolved.
 
 #### ⛔ CHECKPOINT 3 — Branch strategy (MANDATORY, do not skip)
 
@@ -45,6 +53,6 @@ Present exactly these three options and ask the user to choose one:
 
 After the user picks, invoke `superpowers:using-git-worktrees` if option 3 was chosen.
 
-**Stop condition:** Slug confirmed, session file created/resumed, branch strategy chosen and applied.
+**Stop condition:** Slug confirmed, feature ID determined, session file created/resumed, branch strategy chosen and applied.
 
-**Hands off:** Confirmed `<idea-slug>`, an existing or freshly created `docs/<idea-slug>-SESSION.md`, and the chosen workspace (main/branch/worktree) to `02-interview.md`.
+**Hands off:** Confirmed `<idea-slug>`, `<feature-id>`, an existing or freshly created `docs/<feature-id>-<idea-slug>-SESSION.md`, and the chosen workspace (main/branch/worktree) to `02-interview.md`.

@@ -15,16 +15,20 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — status updates, the consolidated report, the merge/cleanup question — exclusively in Romanian, regardless of the language the plan was written in.
 
-All deliverables this skill writes or updates (`docs/<idea-slug>-ISSUE-N-LOG.md`) must always be written in English, independent of the Romanian dialogue above.
+All deliverables this skill writes or updates (`docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md`) must always be written in English, independent of the Romanian dialogue above.
 
 ## Invocation
 
 Pass the plan file path explicitly:
 
-> `/review-me docs/<idea-slug>-PLAN.md`
-> `/review-me docs/<idea-slug>-PLAN-N.md`
+> `/review-me docs/<feature-id>-<idea-slug>-PLAN.md`
+> `/review-me docs/<feature-id>-<idea-slug>-PLAN-N.md`
 
-If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/auth-forms-PLAN.md` or `docs/auth-forms-PLAN-1.md`."*
+If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/01-auth-forms-PLAN.md` or `docs/01-auth-forms-PLAN-1.md`."*
+
+## Feature ID Prefix
+
+Every file under `docs/` for a feature shares one `<feature-id>`. This skill reuses the SAME `<feature-id>` parsed from the plan filename (Step 1) when it locates `ISSUE-N-LOG.md` (Step 6) or the feature's `SPEC.md` (Hard Rules) — never a different id.
 
 ## Output and Context Rules
 
@@ -43,9 +47,9 @@ These rules govern everything this skill prints to the main conversation.
 
 Read the file at the provided path. If it does not exist, stop and tell the user.
 
-Extract `<idea-slug>` from the filename:
-- `docs/auth-forms-PLAN.md` → slug = `auth-forms`
-- `docs/auth-forms-PLAN-1.md` → slug = `auth-forms`, plan = `1`
+Extract `<feature-id>`, `<idea-slug>`, and (for issue plans) the plan number from the filename:
+- `docs/01-auth-forms-PLAN.md` → feature-id = `01`, slug = `auth-forms`
+- `docs/01-auth-forms-PLAN-1.md` → feature-id = `01`, slug = `auth-forms`, plan = `1`
 
 Hold the plan content in context — it is the reference for the review.
 
@@ -98,7 +102,7 @@ Before consolidating results, apply this checklist to the working tree. Each unc
 Present a single consolidated summary:
 
 ```
-## Review: <idea-slug>-PLAN[-N]
+## Review: <feature-id>-<idea-slug>-PLAN[-N]
 
 ### Plan compliance (Claude)
 <issues from Step 2, or "No issues found">
@@ -119,9 +123,9 @@ If the verdict is REVISE, list exactly what needs to be fixed. Do NOT fix anythi
 
 ### Step 6 — Update issue log
 
-Only if the plan file is `docs/<idea-slug>-PLAN-N.md` (an issue-derived plan):
+Only if the plan file is `docs/<feature-id>-<idea-slug>-PLAN-N.md` (an issue-derived plan):
 
-1. Check whether `docs/<idea-slug>-ISSUE-N-LOG.md` exists.
+1. Check whether `docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md` exists — same `<feature-id>` as the plan file read in Step 1.
 2. If it does not exist, do not create one — just include a note in the consolidated report (Step 5's output, as presented to the user) that the expected log was missing (log creation is `sdd:implement`'s job, not this skill's).
 3. If it exists, replace only the `## Verification` section's content (leave `## What's new in the app` and `## What was built` untouched). The first line must be exactly one of:
    - `Not yet verified` — should not normally be written here; this step always sets one of the other three.
@@ -146,4 +150,4 @@ Do NOT proceed with merge or cleanup without explicit user confirmation.
 - Do NOT invoke `executing-plans` or any implementation skill.
 - Always read the plan file before running any review.
 - `/codex:review` is standard review — do NOT use `/codex:adversarial-review` (design decisions are already settled at this stage).
-- After a REVISE verdict, check whether `docs/<idea-slug>-SPEC.md` needs updating to reflect decisions made during implementation before re-running verify.
+- After a REVISE verdict, check whether `docs/<feature-id>-<idea-slug>-SPEC.md` (same `<feature-id>` as the plan) needs updating to reflect decisions made during implementation before re-running verify.

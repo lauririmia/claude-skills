@@ -15,7 +15,7 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — status updates, the consolidated report, the recommendation to re-verify — exclusively in Romanian, regardless of the language the problem description was pasted in.
 
-All deliverables this skill writes or updates (`docs/<slug>-PLAN[-N].md`, `docs/<slug>-ISSUE-N-LOG.md`, code, code comments, commit messages) must always be written in English, independent of the Romanian dialogue above. Subagent dispatch prompts (Steps 2a and 2c) also stay in English — they are instructions to other Claude agents, not user-facing dialogue.
+All deliverables this skill writes or updates (`docs/<feature-id>-<slug>-PLAN[-N].md`, `docs/<feature-id>-<slug>-ISSUE-N-LOG.md`, code, code comments, commit messages) must always be written in English, independent of the Romanian dialogue above. Subagent dispatch prompts (Steps 2a and 2c) also stay in English — they are instructions to other Claude agents, not user-facing dialogue.
 
 ## Invocation
 
@@ -50,7 +50,7 @@ If neither source yields a problem, stop and tell the user explicitly:
 
 > *"I didn't receive any problem to fix. Paste the issue from verify's REVISE output, or run this right after `/sdd:verify` in the same session."*
 
-Also deduce the plan file path (`docs/<slug>-PLAN.md` or `docs/<slug>-PLAN-N.md`) from context — `/sdd:verify`'s own invocation in this conversation references it. If it cannot be deduced, ask the user explicitly: *"Which plan file is this for, e.g. `docs/auth-forms-PLAN.md` or `docs/auth-forms-PLAN-1.md`?"*
+Also deduce the plan file path (`docs/<feature-id>-<slug>-PLAN.md` or `docs/<feature-id>-<slug>-PLAN-N.md`) from context — `/sdd:verify`'s own invocation in this conversation references it, feature-id included. If it cannot be deduced, ask the user explicitly: *"Which plan file is this for, e.g. `docs/01-auth-forms-PLAN.md` or `docs/01-auth-forms-PLAN-1.md`?"* The `<feature-id>` parsed or given here is reused as-is for the `ISSUE-N-LOG.md` this skill may update (Step 2c) — never recompute it.
 
 ### Step 2 — Process each problem, one at a time
 
@@ -72,9 +72,9 @@ Report this to the user, clearly stating why the subagent concluded the problem 
 
 #### 2c — If REAL
 
-1. Update the plan file (`docs/<slug>-PLAN[-N].md`) to reflect the fix or the new requirement being made.
+1. Update the plan file (`docs/<feature-id>-<slug>-PLAN[-N].md`) to reflect the fix or the new requirement being made.
 2. Use the `Agent` tool to dispatch a fix subagent — same pattern as `sdd:implement`'s Steps 2/4: write a failing regression test first (following `superpowers:test-driven-development`), then fix the implementation to make it pass. Do NOT modify the test to make it pass — fix the implementation instead.
-3. If the plan is issue-derived and `docs/<slug>-ISSUE-N-LOG.md` exists, update it:
+3. If the plan is issue-derived and `docs/<feature-id>-<slug>-ISSUE-N-LOG.md` exists, update it:
    - `## Verification` — new status reflecting the fix (e.g. `Verified after fixes`), with a bullet naming what was wrong and what changed.
    - `## What was built` — only if the fix touched files, models, routes, or contracts that a future issue may depend on.
    - Leave `## What's new in the app` untouched unless the fix changed user-facing behavior.
@@ -93,7 +93,7 @@ If the testing subagent reports failures:
 Present a consolidated summary:
 
 ```
-## Revise: <idea-slug>
+## Revise: <feature-id>-<idea-slug>
 
 ### Problems addressed
 <for each problem: REAL (fixed) or NOT REAL (no changes made), with a one-line reason>
