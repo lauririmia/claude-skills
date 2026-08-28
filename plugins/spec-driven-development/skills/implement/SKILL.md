@@ -83,10 +83,10 @@ You are implementing a TDD plan. Read this plan carefully and execute it step by
 Read the plan file at the path above before doing anything else.
 
 Instructions:
-- Do NOT delegate any part of this task to another subagent — no spawning via the `Agent` tool or any similar mechanism. Execute every step yourself, directly, in this thread. You were dispatched precisely so this work happens in one isolated, traceable context; sub-delegating hands the actual work to an agent nobody is tracking, defeats that isolation, and makes your final report describe work you didn't personally verify.
 - Use the `superpowers:subagent-driven-development` skill to implement this plan task-by-task.
 - Each task must follow `superpowers:test-driven-development`.
 - Do NOT skip any step.
+- The dispatching this skill asks you to do is limited to what `superpowers:subagent-driven-development` itself defines (its per-task implementer and reviewer subagents). Do not invent any further layer of delegation beyond that — e.g. don't have a per-task implementer spawn its own helper subagent, and don't route work through any subagent mechanism this skill doesn't call for.
 - Before every use of the `Edit` tool on an existing file — even one you believe a prior task already created — use the `Read` tool on it first, in this subagent's own context; using `Write` to create a genuinely new file needs no prior Read. If `Edit` or `Write` fails, `Read` the file (or confirm it doesn't exist) and retry the same tool — never fall back to a raw shell command (e.g. `sed`, `cat >`) to force the change through.
 - Do NOT modify tests to make them pass — fix the implementation instead.
 - For framework-specific patterns (React hooks, routing, auth, database ORM, etc.), verify against official documentation before implementing.
@@ -122,6 +122,7 @@ You are verifying an implementation against a TDD plan. Do NOT modify any code.
 Read the plan file at the path above before doing anything else.
 
 Instructions:
+- Do NOT delegate any part of this task to another subagent — no spawning via the `Agent` tool or any similar mechanism. Run every command yourself, directly, in this thread. This task is simple enough to not need a controller/worker split, and sub-delegating would hand the actual verification to an agent nobody is tracking, making your report describe results you didn't personally observe.
 - Read the test commands and verification steps defined in the plan above.
 - Run every test and verification command.
 - Report concisely: pass/fail counts, an overall PASS / FAIL verdict, and for each failing test only its name plus a 1-3 line error excerpt (not the full stack trace or raw command output).
@@ -134,7 +135,7 @@ Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1. Re
 Apply the **Subagent Timeout & Escalation** rules above to this dispatch (and to every fix subagent dispatch below).
 
 If the testing subagent reports any failures:
-1. Spawn a new **fix subagent** using the Agent tool, giving it the failing test output and the plan file's absolute path (instruct it to read the plan file itself, not a pasted copy). Instruct it to fix only the failing implementation (minimal change, do not alter tests), and to report back with a 1-2 line summary of the fix, not a diff dump.
+1. Spawn a new **fix subagent** using the Agent tool, giving it the failing test output and the plan file's absolute path (instruct it to read the plan file itself, not a pasted copy). Instruct it to fix only the failing implementation (minimal change, do not alter tests), to make the fix itself directly rather than spawning any subagent of its own (same reasoning as the testing subagent above — this is a bounded, single-context fix, not a controller task), and to report back with a 1-2 line summary of the fix, not a diff dump.
 2. Re-dispatch the testing subagent.
 3. Repeat until all tests pass.
 
