@@ -48,7 +48,16 @@ These rules govern everything this skill prints to the main conversation — sub
 - **Status updates are one line each** ("Step 2: implementation subagent dispatched", "Step 4: 12/12 tests passing") — no restating of plan content or prior steps.
 - **Default to the minimal useful output.** If unsure how much detail to show, show less and offer to expand on request.
 
-## Process
+## Subagent Timeout & Escalation
+
+Every subagent dispatched by this skill (the implementation subagent in Step 2, the testing subagent in Step 4, and any fix subagent spawned during Step 4's failure loop) is watched under the same rule, so a stuck subagent never silently stalls the whole run:
+
+1. **Arm a 5-minute check right after dispatch.** Call `TaskOutput` on the subagent's task with `block: true` and `timeout: 300000` (5 minutes). If it returns because the subagent finished, proceed normally — read its report and move on.
+2. **If the call times out instead of completing**, the subagent has gone 5 minutes with no result. Call `TaskOutput` again with `block: false` to snapshot its current output, and check `ListAgents` to confirm whether it's still listed as running. Use that snapshot to judge whether it's making real progress (output growing, distinguishable steps happening) or genuinely stuck (output frozen, repeating the same action, or erroring silently).
+3. **First time a given subagent looks stuck:** stop it with `TaskStop`, tell the user in one line that the subagent stalled and is being restarted, then re-dispatch the exact same task (same prompt, same plan path) via the `Agent` tool as a fresh subagent, and re-arm a new 5-minute `TaskOutput` check (back to step 1) for it.
+4. **Second time the same task's subagent stalls** (i.e. the restarted subagent also fails to complete within its 5-minute window): stop it with `TaskStop` and stop delegating that task to a subagent entirely. Tell the user in one line that delegation failed twice and execution is moving inline. Take over the task yourself, running it directly in the main thread instead of a subagent — this sacrifices the clean-context benefit of subagents, but running it inline is what lets you observe the exact commands and output as they happen, which is what's needed to debug why it kept stalling. Continue the skill's process from there once the inline run finishes.
+
+This escalation is per-task: a fresh task dispatched later in the skill (e.g. the testing subagent after implementation succeeds) starts its own fresh two-strike count.
 
 ### Step 1 — Read the plan file
 
@@ -74,6 +83,7 @@ You are implementing a TDD plan. Read this plan carefully and execute it step by
 Read the plan file at the path above before doing anything else.
 
 Instructions:
+- Do NOT delegate any part of this task to another subagent — no spawning via the `Agent` tool or any similar mechanism. Execute every step yourself, directly, in this thread. You were dispatched precisely so this work happens in one isolated, traceable context; sub-delegating hands the actual work to an agent nobody is tracking, defeats that isolation, and makes your final report describe work you didn't personally verify.
 - Use the `superpowers:subagent-driven-development` skill to implement this plan task-by-task.
 - Each task must follow `superpowers:test-driven-development`.
 - Do NOT skip any step.
@@ -86,7 +96,7 @@ Instructions:
 
 Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1. Read that file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
 
-Wait for the implementation subagent to complete before proceeding. Relay its report to the user as the short summary described in **Output and Context Rules**, not the raw subagent transcript.
+Apply the **Subagent Timeout & Escalation** rules above to this dispatch. Once it completes (directly or after escalation), relay its report to the user as the short summary described in **Output and Context Rules**, not the raw subagent transcript.
 
 ### Step 3 — Spec divergence check
 
@@ -120,6 +130,8 @@ Instructions:
 ```
 
 Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1. Read that file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
+
+Apply the **Subagent Timeout & Escalation** rules above to this dispatch (and to every fix subagent dispatch below).
 
 If the testing subagent reports any failures:
 1. Spawn a new **fix subagent** using the Agent tool, giving it the failing test output and the plan file's absolute path (instruct it to read the plan file itself, not a pasted copy). Instruct it to fix only the failing implementation (minimal change, do not alter tests), and to report back with a 1-2 line summary of the fix, not a diff dump.
@@ -165,6 +177,6 @@ If the plan is a plain `docs/<idea-slug>-PLAN.md` (SPEC- or PRD-derived, no issu
 ## Hard Rules
 
 - Do NOT start without user confirmation of Bypass Permissions.
-- Do NOT run implementation or tests inline — always dispatch to subagents via the Agent tool.
+- Do NOT run implementation or tests inline — always dispatch to subagents via the Agent tool, except for the second-stall inline takeover defined in **Subagent Timeout & Escalation**.
 - Do NOT modify tests to make them pass — fix the implementation instead.
 - Do NOT offer to merge, create a PR, or clean up branches/worktrees — that belongs in `/verify`, after the implementation has been validated.
