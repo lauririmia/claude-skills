@@ -26,11 +26,6 @@ Pass the plan file path explicitly:
 
 If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/auth-forms-PLAN.md` or `docs/auth-forms-PLAN-1.md`."*
 
-## Before Starting
-
-Tell the user: *"Please run `/clear` first to start with a clean context, then re-invoke this skill."*
-If the user has already cleared, proceed.
-
 ## Output and Context Rules
 
 These rules govern everything this skill prints to the main conversation.

@@ -40,11 +40,6 @@ This skill generates lists (variations, directions) — the risk here is genuine
 - Between phases, give a one-line status update, not a recap of everything generated so far.
 - If ever unsure how much detail to show, default to the shorter option — fewer, sharper items beat an exhaustive list.
 
-## Before Starting
-
-Tell the user: *"Please run `/clear` first to start with a clean context, then re-invoke this skill."*
-If the user has already cleared, proceed.
-
 ## Process
 
 Read and follow each file in `steps/` **one at a time, in numeric order, immediately before executing it**. Each step file is mandatory context for its own step — do not pre-load later step files, and do not rely on the index summary below as a substitute for reading the step file itself.

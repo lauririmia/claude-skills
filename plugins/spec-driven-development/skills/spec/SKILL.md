@@ -29,11 +29,6 @@ Maintain `docs/<idea-slug>-SESSION.md` throughout the session. Creation is handl
 
 **When Act 1 concludes:** append `## Final Spec Path: docs/<idea-slug>-SPEC.md` to the session file.
 
-## Before Starting
-
-Tell the user: *"Please run `/clear` first to start with a clean context, then re-invoke this skill."*
-If the user has already cleared, proceed.
-
 ## Output and Context Rules
 
 These rules govern everything this skill prints to the main conversation. They do not apply to `SESSION.md`, `SPEC.md`, or `SPEC-REVIEW.md` on disk, which are the full-detail record of the session.
