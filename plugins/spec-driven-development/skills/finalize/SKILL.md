@@ -28,8 +28,9 @@ This skill orchestrates git operations and other skills — the risk here is ech
 - Never paste raw `git status --short` (or any git command) output into the conversation. Summarize it in one line (e.g., "3 fișiere modificate, niciun fișier nou" or "niciun fișier modificat — sar la Step 3").
 - After `commit-message` completes, report only the commit message subject line and the fact that it succeeded — do not reproduce the full diff or the full body of the commit message unless the user asks.
 - When invoking `finishing-a-development-branch`, relay only the decision points and final outcome to the user (options presented, choice made, result) — do not reproduce that skill's internal logs, git command output, or intermediate reasoning in the conversation.
+- **Summarize README/CLAUDE.md edits instead of dumping them.** Step 3 applies changes directly, without asking first — report what changed as a one-line-per-file summary, not the full diff or the full branch diff that led to it. If more than ~5 sections changed across both files, give a one-line count + the most significant ones instead of listing every edit.
 - If any step's underlying command fails or produces an error, report the one-line cause, not the full stack trace or raw error dump — offer to show more only if the user asks.
-- Default to the shortest accurate status update between steps (e.g., "Commit creat." / "Testele au fost deja verificate — sar peste re-rulare.").
+- Default to the shortest accurate status update between steps (e.g., "Commit creat." / "Testele au fost deja verificate — sar peste re-rulare." / "README/CLAUDE.md sunt la zi.").
 
 ## Process
 
@@ -56,7 +57,31 @@ The `commit-message` skill will:
 
 Wait for the commit to complete before proceeding. Report only the commit subject line back to the user.
 
-### Step 3 — Finish the branch
+### Step 3 — Check README.md / CLAUDE.md for staleness
+
+Check whether a README and/or a CLAUDE file exist at the repo root, matched **case-insensitively** — `README.md`, `Readme.md`, `readme.md`, `ReadME.md`, and likewise for `CLAUDE.md`, all refer to the same file on a case-insensitive filesystem (macOS default) but are genuinely distinct paths on a case-sensitive one (Linux), so an exact-case check can silently miss the real file:
+
+```bash
+find . -maxdepth 1 -iname 'readme.md' -o -maxdepth 1 -iname 'claude.md'
+```
+
+Use whatever casing `find` actually reports for the rest of this step (don't assume it's `README.md`/`CLAUDE.md`). This project has a README at the root but no root CLAUDE file; other repos this skill runs in may have both, one, or neither, in any casing — do not assume either exists or guess its casing.
+
+If **neither file exists**, note it in one line ("Niciun README.md sau CLAUDE.md la rădăcină — sar peste acest pas.") and move on to Step 4. Do not create either file.
+
+If **one or both exist**, compare what changed on this branch against what those files describe:
+
+```bash
+git diff <merge-base>...HEAD --stat
+```
+
+(Use the branch's actual merge-base with its base branch — same target this skill's downstream `finishing-a-development-branch` step reasons about.) Skim the stat output and touched paths rather than the full diff — you're looking for the kind of change that makes documentation wrong, not every line changed. Things that typically warrant an update: a new skill or plugin added, a structural change to how the repo is organized, a workflow or install/update instruction that changed, a new dependency the docs promise doesn't exist yet. Most commits (bug fixes, internal refactors, test-only changes) don't touch what README/CLAUDE.md describe — don't propose an edit just because *something* changed.
+
+If nothing rises to that bar, say so in one line ("README/CLAUDE.md sunt la zi.") and move on.
+
+If something does, apply the edits directly — do not propose them and wait for approval first. Fold them into the commit from Step 2 with `git commit --amend --no-edit` if that commit hasn't been pushed anywhere yet (check with `git status -sb` or `git log @{u}..HEAD` — if the branch has no upstream, or HEAD is still ahead of it, amending is safe); otherwise create a small separate commit ("docs: update README/CLAUDE.md for <branch>") rather than rewriting already-pushed history. Report what was changed in one line per file per the Output and Context Rules above (e.g., "README.md actualizat: adăugat pluginul `foo` în tabelul de plugin-uri.") — the user sees the result, not a pre-edit proposal.
+
+### Step 4 — Finish the branch
 
 Tests were already run during `sdd:implement` and `sdd:verify` — do not ask the user whether to re-run them, and do not re-run them here. Invoke `superpowers:finishing-a-development-branch` to handle the remainder:
 
