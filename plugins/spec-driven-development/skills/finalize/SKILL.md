@@ -5,7 +5,7 @@ description: Finalizes a development branch by committing all pending changes an
 
 # SDD Finalize — Commit and Complete Development Branch
 
-Commits all pending changes on the current branch (or worktree), then hands off to `superpowers:finishing-a-development-branch` for merge/PR options.
+Commits all pending changes on the current branch (or worktree), then hands off to `superpowers:finishing-a-development-branch` for merge/PR options. On a local merge into main, tags the merge commit with the feature's slug.
 
 ## Model & Thinking
 
@@ -97,3 +97,23 @@ This skill will then:
 3. Execute the chosen option and clean up if applicable
 
 Follow that skill's instructions exactly from this point forward, but relay only decision points and outcomes to the user, per the Output and Context Rules above.
+
+### Step 5 — Tag the merge commit (local-merge outcome only)
+
+If Step 4 resulted in anything other than a **local merge into the repo's main branch** (a PR, "keep as-is", or a discard), skip this step entirely — there is no new commit on the main branch yet to tag, or the branch is going away. A PR's eventual merge is out of this skill's control and out of scope here.
+
+If Step 4 did merge locally into the main branch, tag that merge commit with the feature's slug:
+
+1. **Determine the slug.** Two sources, in order of preference:
+   - The current branch name, if it carries the slug directly (branches created by `superpowers:using-git-worktrees` or other skills in this plugin are typically named after the slug, e.g. `auth-forms` or `feature/auth-forms`).
+   - `docs/<slug>-SPEC.md` / `docs/<slug>-PLAN.md` / `docs/<slug>-PLAN-N.md` files touched on this branch (`git diff --name-only <merge-base>...HEAD -- docs/`) — the slug is the filename prefix before `-SPEC`/`-PLAN`.
+
+   If both sources point to the same slug, or only one source yields a slug, use it directly — no need to ask. If they disagree, or neither yields anything, ask the user once, briefly: *"Care e slug-ul feature-ului pentru tag? (ex: auth-forms)"* — do not let this block or unwind the merge that already happened; the tag can be added after the fact once you have an answer.
+
+2. **Check for a name collision:** `git tag -l <slug>`. If a tag with that name already exists, tell the user in one line and ask how to proceed — overwrite (`git tag -f`), use a different name, or skip tagging — rather than silently overwriting an existing tag.
+
+3. **Create the tag** on the merge commit: `git tag <slug> <merge-commit-sha>`. A lightweight tag is enough — this marks a feature's landing point for reference, not a release, so it doesn't need the annotation metadata (tagger, date, message) an annotated tag carries.
+
+4. **Do not push the tag.** Pushing is a shared-state operation outside this skill's scope, same as it is for branches/commits elsewhere in this process — leave it for the user or the existing push flow to do explicitly.
+
+Report the outcome in one line ("Tag `<slug>` creat pe commit-ul de merge.") or the reason it was skipped, per the Output and Context Rules above.
