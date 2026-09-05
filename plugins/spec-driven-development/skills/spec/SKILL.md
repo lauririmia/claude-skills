@@ -138,7 +138,10 @@ REFRAMED SUCCESS CRITERIA:
 
 Do not write a spec section for an objective that cannot be directly verified.
 
-Invoke `superpowers:brainstorming` with **two overrides**: do NOT invoke `writing-plans` at the end; and do NOT display the spec content in the console or commit automatically — see Step 5.
+Invoke `superpowers:brainstorming` with **three overrides**:
+1. Do NOT invoke `writing-plans` at the end.
+2. Do NOT display the spec content in the console or commit automatically — see Step 5.
+3. On the architectural path, stop after "Propose 2-3 approaches" and the clarifying-questions/decisions loop that fixes purpose, constraints, and success criteria. Skip brainstorming's own "Present design sections" / "User approves design?" / "Write design doc" steps entirely — do not present a design or spec proposal in chat for approval, and do not write to `docs/superpowers/specs/...`. Step 5 below is this skill's replacement for those steps: it writes `docs/<feature-id>-<idea-slug>-SPEC.md` directly to disk and gets the user's approval on that file, so there is exactly one approval gate for the spec content, not two.
 
 ### Step 5 — Write SPEC.md
 After the brainstorming is complete, write a structured summary directly to `docs/<feature-id>-<idea-slug>-SPEC.md`, **in Romanian**, without displaying its full content in the console:
