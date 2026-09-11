@@ -1,12 +1,12 @@
 # Step 01 — Slug and Branch
 
-**Reads:** Optional `docs/<feature-id>-<slug>-DESIGN.md` path passed as invocation argument.
+**Reads:** Optional `docs/<feature-id>-<slug>-<file-id>-DESIGN.md` path passed as invocation argument.
 
 **Does:**
 
 #### ⛔ CHECKPOINT 1 — Slug confirmation (MANDATORY, do not skip)
 
-If a DESIGN.md path was passed as argument, derive the slug from the filename — strip the leading `NN-` feature id and the trailing `-DESIGN.md` (e.g. `docs/01-auth-forms-DESIGN.md` → `auth-forms`). Propose the slug and wait for explicit confirmation. Hold onto the `01` too — it's this feature's id (see Checkpoint 2).
+If a DESIGN.md path was passed as argument, parse it: given a name like `01-auth-forms-3-DESIGN.md`, `<feature-id>` is the numeric segment at the start (`01`). Strip the `.md` extension and the leading `<feature-id>-` prefix. Then strip the known type suffix from the right (`-DESIGN`). What remains ends with `-<file-id>` — that's the file's id (`3`). The rest, with that trailing numeric suffix removed, is `<idea-slug>` (`auth-forms`). Propose the slug and wait for explicit confirmation. Hold onto the `<feature-id>` too — it's this feature's id (see Checkpoint 2). The DESIGN.md's own `<file-id>` (`3`) is not reused — this skill's outputs get their own, freshly computed `<file-id>` (see `steps/05-sharpen.md`).
 
 If no argument was passed, ask the user to describe what they want to explore, then derive the slug from their description. Propose it and wait for confirmation.
 

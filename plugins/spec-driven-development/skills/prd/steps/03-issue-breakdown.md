@@ -1,6 +1,6 @@
 # Step 03 — Draft the Issue Breakdown
 
-**Reads:** Approved `docs/<feature-id>-<idea-slug>-PRD.md` from `02-write-prd.md`.
+**Reads:** Approved `docs/<feature-id>-<idea-slug>-<file-id>-PRD.md` from `02-write-prd.md`.
 
 **Does:**
 

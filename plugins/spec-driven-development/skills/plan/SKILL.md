@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Transforms a SPEC.md, PRD.md, or ISSUE-N.md into a concrete TDD implementation plan saved as docs/<feature-id>-<idea-slug>-PLAN.md (or PLAN-N.md for issues). Enters plan-mode, invokes writing-plans, stops before execution. When invoked with a PRD.md or ISSUE-N.md (complex workflow after /prd), first confirms slug and sets up a branch or worktree before planning. Use when user says "plan me", "plan this", "make a plan from", or wants to turn a spec, PRD, or issue into a step-by-step implementation plan.
+description: Transforms a SPEC.md, PRD.md, or ISSUE-N.md into a concrete TDD implementation plan saved as docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md (or PLAN-N.md for issues). Enters plan-mode, invokes writing-plans, stops before execution. When invoked with a PRD.md or ISSUE-N.md (complex workflow after /prd), first confirms slug and sets up a branch or worktree before planning. Use when user says "plan me", "plan this", "make a plan from", or wants to turn a spec, PRD, or issue into a step-by-step implementation plan.
 ---
 
 # Plan-Me — Spec, PRD, or Issue to Implementation Plan
@@ -15,21 +15,21 @@ Use **Claude Sonnet** (`claude-sonnet`) with **high thinking effort** (`ultrathi
 
 Conduct all dialogue with the user — questions, checkpoints, granularity choices, status updates — exclusively in Romanian, regardless of the language the input file was written in.
 
-All deliverables this skill writes (`docs/<feature-id>-<idea-slug>-PLAN.md` or `PLAN-N.md`, commit messages) must always be written in English, independent of the Romanian dialogue above. This applies to the `writing-plans` invocation too: hold the interview in Romanian, but write the plan document itself in English.
+All deliverables this skill writes (`docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` or `PLAN-N.md`, commit messages) must always be written in English, independent of the Romanian dialogue above. This applies to the `writing-plans` invocation too: hold the interview in Romanian, but write the plan document itself in English.
 
 ## Invocation
 
 Pass the input file path explicitly:
 
-> `/plan-me docs/<feature-id>-<idea-slug>-SPEC.md`
-> `/plan-me docs/<feature-id>-<idea-slug>-PRD.md`
-> `/plan-me docs/<feature-id>-<idea-slug>-ISSUE-N.md`
+> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-SPEC.md`
+> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-PRD.md`
+> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-ISSUE-N.md`
 
-If no path is provided, stop and ask: *"Please specify the input file path, e.g. `docs/01-auth-forms-SPEC.md`, `docs/01-auth-forms-PRD.md`, or `docs/01-auth-forms-ISSUE-1.md`."*
+If no path is provided, stop and ask: *"Please specify the input file path, e.g. `docs/01-auth-forms-3-SPEC.md`, `docs/01-auth-forms-2-PRD.md`, or `docs/01-auth-forms-5-ISSUE-1.md`."*
 
 ## Feature ID Prefix
 
-Every file this skill writes under `docs/` (`PLAN.md` or `PLAN-N.md`) is named `<feature-id>-<idea-slug>-TYPE.md`, reusing the SAME `<feature-id>` carried by the input file's own filename — this plan belongs to the same feature as the SPEC/PRD/ISSUE it was generated from, not a new one. See Step 1 below.
+Every file this skill writes under `docs/` (`PLAN.md` or `PLAN-N.md`) is named `<feature-id>-<idea-slug>-<file-id>-TYPE.md`, reusing the SAME `<feature-id>` carried by the input file's own filename — this plan belongs to the same feature as the SPEC/PRD/ISSUE it was generated from, not a new one — but computing its OWN `<file-id>` (see Algorithm A in Step 1). See Step 1 below.
 
 ## Output and Context Rules
 
@@ -47,15 +47,28 @@ These rules govern everything this skill prints to the main conversation — the
 
 Read the file at the provided path. If it does not exist, stop and tell the user.
 
-Determine the **input type** and extract `<feature-id>`, `<idea-slug>`, and the output path — the output reuses the SAME `<feature-id>` as the input, since the plan belongs to the same feature:
-- `docs/01-auth-forms-SPEC.md` → type = SPEC, feature-id = `01`, slug = `auth-forms`, output = `docs/01-auth-forms-PLAN.md`
-- `docs/01-auth-forms-PRD.md` → type = PRD, feature-id = `01`, slug = `auth-forms`, output = `docs/01-auth-forms-PLAN.md`
-- `docs/01-auth-forms-ISSUE-1.md` → type = ISSUE, feature-id = `01`, slug = `auth-forms`, issue = `1`, output = `docs/01-auth-forms-PLAN-1.md`
+Determine the **input type** and extract `<feature-id>`, `<idea-slug>`, and `<file-id>` from the input filename, then compute the output path — the output reuses the SAME `<feature-id>` as the input, since the plan belongs to the same feature, but gets its OWN newly-computed `<file-id>`:
+
+Given a name like `01-auth-forms-3-SPEC.md` or `01-auth-forms-5-ISSUE-1.md`: `<feature-id>` is the numeric segment at the start (`01`). Strip the `.md` extension and the `<feature-id>-` prefix. Then strip the known type suffix from the right (`-SPEC`, `-PRD`, or `-ISSUE-<N>` — keep `<N>` as the issue number when present). What remains ends in `-<file-id>` — that is the file-id. The rest, with that trailing numeric suffix removed, is `<idea-slug>`.
+
+Examples:
+- `docs/01-auth-forms-3-SPEC.md` → type = SPEC, feature-id = `01`, slug = `auth-forms`, file-id = `3`
+- `docs/01-auth-forms-2-PRD.md` → type = PRD, feature-id = `01`, slug = `auth-forms`, file-id = `2`
+- `docs/01-auth-forms-5-ISSUE-1.md` → type = ISSUE, feature-id = `01`, slug = `auth-forms`, file-id = `5`, issue = `1`
+
+The output path always gets a freshly-computed `<file-id>` (see Algorithm A just below) — it never reuses the input's own file-id:
+- SPEC or PRD input → output = `docs/<feature-id>-<idea-slug>-<new-file-id>-PLAN.md` (e.g. `docs/01-auth-forms-4-PLAN.md`)
+- ISSUE-N input → output = `docs/<feature-id>-<idea-slug>-<new-file-id>-PLAN-N.md` (e.g. `docs/01-auth-forms-6-PLAN-1.md`)
+
+**Algorithm A — computing `<file-id>` for a new file.** Before writing the output plan file (in OVERRIDE 5 / Step 4), calculate `<file-id>`:
+1. List the files in `docs/` that start with `<feature-id>-<idea-slug>-` (e.g. `ls docs/ | grep '^<feature-id>-<idea-slug>-'`).
+2. From each name found, extract the numeric segment immediately after `<idea-slug>-` and before the next hyphen — that is the existing file-id of that file.
+3. The new `<file-id>` = (the largest number extracted) + 1, or `1` if no file starts with `<feature-id>-<idea-slug>-`.
 
 #### Predecessor log check (ISSUE inputs only)
 
 If the input type is ISSUE and `N > 1`:
-1. Check whether `docs/<feature-id>-<idea-slug>-ISSUE-(N-1)-LOG.md` exists — same `<feature-id>` as this run's input, since every file for this feature shares it.
+1. Check whether a predecessor log exists using **Algorithm B**: search with the glob `docs/<feature-id>-<idea-slug>-*-ISSUE-(N-1)-LOG.md` — same `<feature-id>` as this run's input, since every file for this feature shares it. If more than one result appears, use the one with the highest file-id.
 2. If it does not exist (the prior issue not yet implemented or not yet logged), no-op — current behavior unchanged.
 3. If it exists, read only that one file (not a glob of all prior issues) and hold it as **supplemental** context for Step 4 — it never overrides the current issue's spec, the PRD, or what the actual code shows.
    - If the log's `## Verification` reads "Not yet verified," treat its claims as lower-confidence and say so in the generated plan.
@@ -108,7 +121,7 @@ Use the `Skill` tool to invoke `superpowers:writing-plans` with these overrides:
 
 > **OVERRIDE 1 — input:** The feature description comes from the file read in Step 1, not from conversation context. If a predecessor log was found per the Predecessor log check above, include it as supplemental context (with any lower-confidence or discrepancy notes) alongside the primary input.
 >
-> **OVERRIDE 2 — output:** Save the final plan to `docs/<feature-id>-<idea-slug>-PLAN.md` (or `docs/<feature-id>-<idea-slug>-PLAN-N.md` for an issue input). Do NOT use the default plan file location.
+> **OVERRIDE 2 — output:** Save the final plan to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `docs/<feature-id>-<idea-slug>-<file-id>-PLAN-N.md` for an issue input), using the `<file-id>` computed with Algorithm A in Step 1. Do NOT use the default plan file location.
 >
 > **OVERRIDE 3 — tests:** For each implementation step, include the specific tests or verification commands that confirm that step is complete. Write tests before implementation code (TDD order).
 >
@@ -119,8 +132,8 @@ Use the `Skill` tool to invoke `superpowers:writing-plans` with these overrides:
 > Do NOT mention superpowers:executing-plans anywhere in the plan.
 >
 > **OVERRIDE 5 — plan writing & review:** When the plan is ready to be written:
-> 1. Write it directly to `docs/<feature-id>-<idea-slug>-PLAN.md` (or `PLAN-N.md`) without displaying its full content in the console. Just confirm the path.
-> 2. Tell the user: *"Plan written to `docs/<feature-id>-<idea-slug>-PLAN.md`. Please review it and let me know if you have any changes or if you approve."*
+> 1. Before writing, calculate `<file-id>` using Algorithm A (Step 1) if not already computed. Write the plan directly to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `PLAN-N.md`) without displaying its full content in the console. Just confirm the path.
+> 2. Tell the user: *"Plan written to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md`. Please review it and let me know if you have any changes or if you approve."*
 > 3. If the user provides feedback, update the file accordingly and ask again.
 > 4. When the user explicitly approves (e.g. "looks good", "approve", "done", "ok"), return control — do NOT commit here.
 
@@ -132,7 +145,7 @@ Follow every other writing-plans step as written.
 
 After `writing-plans` returns (user has approved the plan):
 
-1. `git add docs/<feature-id>-<idea-slug>-PLAN.md` (or `PLAN-N.md`)
+1. `git add docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `PLAN-N.md`)
 2. `git commit -m "docs: add implementation plan for <idea-slug>"`
 
 Do NOT push. Do NOT skip this step. Do NOT wait for additional user input — approval in Step 4 is sufficient.
@@ -141,14 +154,14 @@ Do NOT push. Do NOT skip this step. Do NOT wait for additional user input — ap
 
 After committing, say:
 
-> *"Plan saved to `docs/<feature-id>-<idea-slug>-PLAN.md`. To implement, run `/implement` with the plan file path."*
+> *"Plan saved to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md`. To implement, run `/implement` with the plan file path."*
 
 ⛔ **HARD STOP — do not continue past this point.** ExitPlanMode approval is approval of the plan document only — it is NOT authorization to implement. The plan file is the only deliverable of this skill. Return control to the user immediately after Step 6.
 
 ## Output
 
-- `docs/<feature-id>-<idea-slug>-PLAN.md` — TDD implementation plan derived from a SPEC.md or PRD.md
-- `docs/<feature-id>-<idea-slug>-PLAN-N.md` — TDD implementation plan for a single vertical slice, derived from an ISSUE-N.md
+- `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` — TDD implementation plan derived from a SPEC.md or PRD.md
+- `docs/<feature-id>-<idea-slug>-<file-id>-PLAN-N.md` — TDD implementation plan for a single vertical slice, derived from an ISSUE-N.md
 
 ## Common Rationalizations
 

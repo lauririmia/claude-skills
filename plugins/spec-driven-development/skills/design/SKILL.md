@@ -1,6 +1,6 @@
 ---
 name: design
-description: Extracts confirmed user intent before design. Use when the ask is underspecified ("build me X" without "for whom" or "why now"), when success criteria are missing, or when there is temptation to fill in unspoken assumptions. Produces docs/<feature-id>-<slug>-DESIGN.md. Handoff goes to sdd:ideate or sdd:spec.
+description: Extracts confirmed user intent before design. Use when the ask is underspecified ("build me X" without "for whom" or "why now"), when success criteria are missing, or when there is temptation to fill in unspoken assumptions. Produces docs/<feature-id>-<slug>-<file-id>-DESIGN.md. Handoff goes to sdd:ideate or sdd:spec.
 ---
 
 # Design — Intent Extraction Before Design
@@ -17,11 +17,11 @@ Conduct all dialogue with the user — the interview, hypotheses, the restat, co
 
 `docs/<feature-id>-<idea-slug>-SESSION.md` is a scratch file that never leaves this skill and is deleted before handoff (see Output below) — write it in Romanian, matching the dialogue it mirrors.
 
-`docs/<feature-id>-<idea-slug>-DESIGN.md` starts in Romanian too: `steps/04-write-and-handoff.md` writes it immediately after the user's "yes" on the restat, in the same language as the interview that produced it. There is no separate file-review checkpoint for DESIGN.md (approval already happened on the restat in `03-confirm.md`), so the translation to English happens right away, within the same step, before the commit — see that step for the instruction. From that point on, the committed `DESIGN.md` and its handoff to `sdd:ideate`/`sdd:spec` are in English, because the rest of the plugin's tooling works in English.
+`docs/<feature-id>-<idea-slug>-<file-id>-DESIGN.md` starts in Romanian too: `steps/04-write-and-handoff.md` writes it immediately after the user's "yes" on the restat, in the same language as the interview that produced it. There is no separate file-review checkpoint for DESIGN.md (approval already happened on the restat in `03-confirm.md`), so the translation to English happens right away, within the same step, before the commit — see that step for the instruction. From that point on, the committed `DESIGN.md` and its handoff to `sdd:ideate`/`sdd:spec` are in English, because the rest of the plugin's tooling works in English.
 
 ## Feature ID Prefix
 
-Every file this skill writes under `docs/` is named `<feature-id>-<idea-slug>-TYPE.md`. `<feature-id>` identifies the *feature* (this slug), not the pipeline stage — it's assigned once, the first time this slug is ever seen, and every file written for this slug across every skill in the pipeline (DESIGN, IDEATE, SPEC, PRD, PLAN, …) reuses that same value. The next never-before-seen slug gets the next number. This exists purely so `docs/` groups and sorts one feature's files together by when that feature was started, chronologically — it is never part of the slug itself: the slug alone — never `<feature-id>` — is what names branches and tags (see `sdd:finalize`). `steps/01-slug-and-branch.md` computes `<feature-id>` right after the slug is confirmed.
+Every file this skill writes under `docs/` is named `<feature-id>-<idea-slug>-<file-id>-TYPE.md`. `<feature-id>` identifies the *feature* (this slug), not the pipeline stage — it's assigned once, the first time this slug is ever seen, and every file written for this slug across every skill in the pipeline (DESIGN, IDEATE, SPEC, PRD, PLAN, …) reuses that same value. The next never-before-seen slug gets the next number. This exists purely so `docs/` groups and sorts one feature's files together by when that feature was started, chronologically — it is never part of the slug itself: the slug alone — never `<feature-id>` — is what names branches and tags (see `sdd:finalize`). `steps/01-slug-and-branch.md` computes `<feature-id>` right after the slug is confirmed. `<file-id>` is a separate counter, unique and increasing per `<feature-id>-<idea-slug>` pair, shared across every file type (DESIGN, IDEATE, SPEC, SPEC-REVIEW, PRD, ISSUE-N, ISSUE-N-LOG, PLAN, PLAN-N) — it exists so files sort by creation order within a feature, not alphabetically by type. `steps/04-write-and-handoff.md` computes it right before writing DESIGN.md.
 
 ## Output and Context Rules
 
@@ -32,7 +32,7 @@ This skill talks to the user a lot (interview) and touches only two small files 
 - If the user's initial description is long, extract only what maps to Outcome / User / Why Now / Success Criteria / Constraints / Out of Scope. Do not quote the raw description back verbatim.
 - When resuming from an existing `docs/<feature-id>-<idea-slug>-SESSION.md`, read only the `Decisions Reached` and `Open Questions` sections needed to resume — do not print the file's contents back to the user.
 - Present the final restat (`steps/03-confirm.md`) exactly once, as six one-line fields (Outcome, User, Why Now, Success Criteria, Constraints, Out of Scope). Do not pad it into paragraphs or repeat it if the user asks a clarifying question about only one field — answer about that field alone.
-- After writing `docs/<feature-id>-<idea-slug>-DESIGN.md` (`steps/04-write-and-handoff.md`), do not print its contents in the console. Confirm only the file path, per that step's instructions.
+- After writing `docs/<feature-id>-<idea-slug>-<file-id>-DESIGN.md` (`steps/04-write-and-handoff.md`), do not print its contents in the console. Confirm only the file path, per that step's instructions.
 - Between steps, give a one-line status update (e.g., "Slug confirmat — încep interviul.") — not a summary of what just happened.
 - Read files under `steps/` one at a time, immediately before executing that step — not all five upfront. If the session ends early (user abandons or context resets), you should not have paid the context cost of unused later steps.
 - Never dump raw file contents, git output, or command logs into the conversation. If a command's output is needed to make a decision, state the one-line conclusion, not the raw output.
@@ -50,12 +50,12 @@ Read and follow each file in `steps/` **one at a time, in numeric order, immedia
 
 ## Output
 
-- `docs/<feature-id>-<idea-slug>-DESIGN.md` — confirmed intent structure. Written once, not echoed back to the user after writing.
+- `docs/<feature-id>-<idea-slug>-<file-id>-DESIGN.md` — confirmed intent structure. Written once, not echoed back to the user after writing.
 - `docs/<feature-id>-<idea-slug>-SESSION.md` — scratch file used only to survive context compaction mid-session; deleted (not committed) once DESIGN.md is written. Never printed to the user.
 
 ## Hard Rules
 
-- Do NOT write `docs/<feature-id>-<idea-slug>-DESIGN.md` before the user gives an explicit "yes" to the restat.
+- Do NOT write `docs/<feature-id>-<idea-slug>-<file-id>-DESIGN.md` before the user gives an explicit "yes" to the restat.
 - Do NOT ask more than one question per message.
 - Do NOT write code or invoke other skills.
 - Do NOT proceed past 03-confirm.md until the restat has been explicitly confirmed.
