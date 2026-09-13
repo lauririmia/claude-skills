@@ -132,12 +132,14 @@ Use the `Skill` tool to invoke `superpowers:writing-plans` with these overrides:
 > Do NOT mention superpowers:executing-plans anywhere in the plan.
 >
 > **OVERRIDE 5 — plan writing & review:** When the plan is ready to be written:
-> 1. Before writing, calculate `<file-id>` using Algorithm A (Step 1) if not already computed. Write the plan directly to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `PLAN-N.md`) without displaying its full content in the console. Just confirm the path.
+> 1. Before writing, calculate `<file-id>` using Algorithm A (Step 1) if not already computed. Apply OVERRIDE 8's Task N/TOTAL numbering to every task heading, then write the plan directly to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `PLAN-N.md`) without displaying its full content in the console. Just confirm the path.
 > 2. Tell the user: *"Plan written to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md`. Please review it and let me know if you have any changes or if you approve."*
-> 3. If the user provides feedback, update the file accordingly and ask again.
+> 3. If the user provides feedback, update the file accordingly — including reapplying OVERRIDE 8 if the number of tasks changed — and ask again.
 > 4. When the user explicitly approves (e.g. "looks good", "approve", "done", "ok"), return control — do NOT commit here.
 
 > **OVERRIDE 7 — granularity:** A granularity was determined above this invocation (auto-selected Balanced, or the user's explicit choice). Include that choice **verbatim** here (e.g. "OVERRIDE 7 — granularity: the user chose 'Balanced — one step per logical unit of work'; size all plan steps accordingly"), since writing-plans is an invoked skill, not a typed API — the constraint only takes effect if it is literally present in this prompt.
+
+> **OVERRIDE 8 — task numbering:** Write every task heading as `### Task N/TOTAL: [Component Name]` instead of the default `### Task N: [Component Name]`, where `TOTAL` is the total number of tasks in the plan's current draft. This lets anything that echoes a task's title later — most importantly the per-task subagent labels `superpowers:subagent-driven-development` produces during `/implement` (e.g. "Implement Task 4: ...") — carry the total task count too, so progress is visible without opening the plan file. Count the `### Task` headings once the full task list is drafted to get `TOTAL`, then stamp it into every heading; recompute and restamp `TOTAL` on every write of the plan document, not just the first — OVERRIDE 5 steps 1 and 3 both call back to this, since a feedback round can add, remove, or merge tasks and leave a stale count otherwise. This numbering lives only in this plan's headings; it doesn't require any change to `writing-plans` itself.
 
 Follow every other writing-plans step as written.
 
