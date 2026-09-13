@@ -282,11 +282,11 @@ Rounds:    N
   rm -f docs/<feature-id>-<idea-slug>-SESSION.md
   ```
 
-  Then propose a git commit — list the files to be staged and ask for confirmation:
+  Then commit automatically — no separate approval needed here. The user already gave their one explicit approval on the spec content at the end of Step 5 (Act 1); Act 2's Codex-driven revisions refine that already-approved spec rather than changing its substance, so re-asking would just be a second gate on the same decision. Stage and commit directly:
   - `docs/<feature-id>-<idea-slug>-<spec-file-id>-SPEC.md`
   - `docs/<feature-id>-<idea-slug>-<review-file-id>-SPEC-REVIEW.md`
 
-  On user approval, commit with message `docs: finalize <idea-slug> spec (brainstorming + Codex review)`. Do NOT push.
+  Commit with message `docs: finalize <idea-slug> spec (brainstorming + Codex review)`. Do NOT push. Tell the user the commit was made (one line, with the commit summary already required above) rather than asking them to confirm it first.
 
   Then recommend a next step instead of asking a generic "ready to move on?" — assess whether the finished `docs/<feature-id>-<idea-slug>-<spec-file-id>-SPEC.md` describes one cohesive unit of work or would benefit from being broken into independently shippable slices first:
   - **Recommend `/sdd:plan`** (the common case) when the spec describes a single vertical slice — even a multi-step feature — that one TDD plan can carry end-to-end and ship as one PR.
@@ -297,7 +297,7 @@ Rounds:    N
   > *"<brief reason, e.g. 'This spec describes a single flow — one implementation plan can cover it end-to-end.'> I recommend `/sdd:plan` as the next step. Do you want to continue with that, or would you rather go through `/sdd:prd` first to break it into separate issues?"*
 
   Do NOT invoke either skill automatically — wait for the user's choice.
-- **MAX_ROUNDS deadlock:** List each unresolved point + Claude's counter-position. Hand to user to break the tie. After the user resolves, propose the same commit as above.
+- **MAX_ROUNDS deadlock:** List each unresolved point + Claude's counter-position. Hand to user to break the tie. Once the user resolves it, apply their decision to `SPEC_FILE` and commit automatically, same as the APPROVED path above — the tie-break itself is the user input needed here, not a separate commit approval.
 
 ---
 
