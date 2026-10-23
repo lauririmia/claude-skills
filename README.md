@@ -25,7 +25,7 @@ A group of related skills becomes a plugin in `plugins/` with its own namespace 
 
 | Plugin | Path | Skills |
 |---|---|---|
-| `aia` | [plugins/ai-avatar/](plugins/ai-avatar/) | `avatar` (entry point) — creates AI influencer character profiles |
+| `aia` | [plugins/ai-avatar/](plugins/ai-avatar/) | `avatar` (entry point), `images` — AI influencer character profiles and Higgsfield image sets |
 | `coursiv` | [plugins/coursiv/](plugins/coursiv/) | `question`, `prompt`, `columns`, `workflow`, `lesson`, `cleanup` — processing Coursiv.io lessons |
 | `dbg` | [plugins/debug/](plugins/debug/) | `diagnose`, `critique`, `handoff`, `improve-codebase-architecture` |
 | `pmpt` | [plugins/prompt/](plugins/prompt/) | `gcao`, `universal`, `short` — prompt engineering transforms |
