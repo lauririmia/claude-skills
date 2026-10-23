@@ -1,11 +1,11 @@
 ---
 name: finalize
-description: Finalizes a development branch by committing all pending changes and then guiding the merge/PR flow. Use when the user says "finalize", "finish", "done with implementation", "merge this", "sdd:finalize", or wants to wrap up and integrate their work into main/master.
+description: Finalizes a development branch by committing all pending changes, creating or updating the root README.md and CLAUDE.md (without duplicating information between them), and then guiding the merge/PR flow. Use when the user says "finalize", "finish", "done with implementation", "merge this", "sdd:finalize", or wants to wrap up and integrate their work into main/master.
 ---
 
 # SDD Finalize — Commit and Complete Development Branch
 
-Commits all pending changes on the current branch (or worktree), then hands off to `superpowers:finishing-a-development-branch` for merge/PR options. On a local merge into main, tags the merge commit with the feature's slug.
+Commits all pending changes on the current branch (or worktree), makes sure the repo root has an up-to-date README.md and CLAUDE.md (creating them if missing, and keeping each fact in only one of the two), then hands off to `superpowers:finishing-a-development-branch` for merge/PR options. On a local merge into main, tags the merge commit with the feature's slug.
 
 ## Model & Thinking
 
@@ -24,7 +24,7 @@ This skill orchestrates git operations and other skills — the risk here is ech
 - Never paste raw `git status --short` (or any git command) output into the conversation. Summarize it in one line (e.g., "3 fișiere modificate, niciun fișier nou" or "niciun fișier modificat — sar la Step 3").
 - After `commit-message` completes, report only the commit message subject line and the fact that it succeeded — do not reproduce the full diff or the full body of the commit message unless the user asks.
 - When invoking `finishing-a-development-branch`, relay only the decision points and final outcome to the user (options presented, choice made, result) — do not reproduce that skill's internal logs, git command output, or intermediate reasoning in the conversation.
-- **Summarize README/CLAUDE.md edits instead of dumping them.** Step 3 applies changes directly, without asking first — report what changed as a one-line-per-file summary, not the full diff or the full branch diff that led to it. If more than ~5 sections changed across both files, give a one-line count + the most significant ones instead of listing every edit.
+- **Summarize README/CLAUDE.md edits instead of dumping them.** Step 3 creates and edits these files directly, without asking first — report what changed as a one-line-per-file summary ("creat" / "actualizat" / "la zi", plus any content moved to avoid duplication), not the full file contents, the full diff, or the full branch diff that led to it. If more than ~5 sections changed across both files, give a one-line count + the most significant ones instead of listing every edit.
 - If any step's underlying command fails or produces an error, report the one-line cause, not the full stack trace or raw error dump — offer to show more only if the user asks.
 - Default to the shortest accurate status update between steps (e.g., "Commit creat." / "Testele au fost deja verificate — sar peste re-rulare." / "README/CLAUDE.md sunt la zi.").
 
@@ -53,7 +53,12 @@ The `commit-message` skill will:
 
 Wait for the commit to complete before proceeding. Report only the commit subject line back to the user.
 
-### Step 3 — Check README.md / CLAUDE.md for staleness
+### Step 3 — Create or update README.md / CLAUDE.md, without duplication
+
+The two files have different readers, and that difference is what decides where each fact goes:
+
+- **README.md** is for humans arriving at the repo: what the project is, how to install and use it, a short overview of what it contains.
+- **CLAUDE.md** is for Claude working inside the repo: directory structure, conventions, workflows and commands to follow, constraints and gotchas that aren't obvious from reading the code.
 
 Check whether a README and/or a CLAUDE file exist at the repo root, matched **case-insensitively** — `README.md`, `Readme.md`, `readme.md`, `ReadME.md`, and likewise for `CLAUDE.md`, all refer to the same file on a case-insensitive filesystem (macOS default) but are genuinely distinct paths on a case-sensitive one (Linux), so an exact-case check can silently miss the real file:
 
@@ -61,11 +66,20 @@ Check whether a README and/or a CLAUDE file exist at the repo root, matched **ca
 find . -maxdepth 1 -iname 'readme.md' -o -maxdepth 1 -iname 'claude.md'
 ```
 
-Use whatever casing `find` actually reports for the rest of this step (don't assume it's `README.md`/`CLAUDE.md`). This project has a README at the root but no root CLAUDE file; other repos this skill runs in may have both, one, or neither, in any casing — do not assume either exists or guess its casing.
+Use whatever casing `find` actually reports for the rest of this step (don't assume it's `README.md`/`CLAUDE.md`). The repos this skill runs in may have both, one, or neither, in any casing — do not assume either exists or guess its casing.
 
-If **neither file exists**, note it in one line ("Niciun README.md sau CLAUDE.md la rădăcină — sar peste acest pas.") and move on to Step 4. Do not create either file.
+#### 3a — Create whichever file is missing
 
-If **one or both exist**, compare what changed on this branch against what those files describe:
+For each file that does not exist, create it at the repo root (using the canonical `README.md` / `CLAUDE.md` casing) and populate it from what the repo actually contains — read the top-level layout, manifests (`package.json`, `plugin.json`, `pyproject.toml`, etc.), existing docs under `docs/`, and the branch's diff stat. Write only what you can verify from the repo; an accurate short file beats a long speculative one, since a wrong CLAUDE.md actively misleads future sessions.
+
+- A new README.md covers: project name and one-line purpose, install/usage, and a brief overview of the main parts.
+- A new CLAUDE.md covers: directory structure, conventions and workflows to follow, and non-obvious constraints. When the README already holds something Claude also needs (e.g., install steps), don't copy it — point to it.
+
+Write both in English, like the other deliverables of this skill.
+
+#### 3b — Update stale content
+
+For files that already existed, compare what changed on this branch against what they describe:
 
 ```bash
 git diff <merge-base>...HEAD --stat
@@ -73,9 +87,23 @@ git diff <merge-base>...HEAD --stat
 
 (Use the branch's actual merge-base with its base branch — same target this skill's downstream `finishing-a-development-branch` step reasons about.) Skim the stat output and touched paths rather than the full diff — you're looking for the kind of change that makes documentation wrong, not every line changed. Things that typically warrant an update: a new skill or plugin added, a structural change to how the repo is organized, a workflow or install/update instruction that changed, a new dependency the docs promise doesn't exist yet. Most commits (bug fixes, internal refactors, test-only changes) don't touch what README/CLAUDE.md describe — don't propose an edit just because *something* changed.
 
-If nothing rises to that bar, say so in one line ("README/CLAUDE.md sunt la zi.") and move on.
+If something does, update the affected file, putting each new fact in the file whose reader needs it (see the split above).
 
-If something does, apply the edits directly — do not propose them and wait for approval first. Fold them into the commit from Step 2 with `git commit --amend --no-edit` if that commit hasn't been pushed anywhere yet (check with `git status -sb` or `git log @{u}..HEAD` — if the branch has no upstream, or HEAD is still ahead of it, amending is safe); otherwise create a small separate commit ("docs: update README/CLAUDE.md for <branch>") rather than rewriting already-pushed history. Report what was changed in one line per file per the Output and Context Rules above (e.g., "README.md actualizat: adăugat pluginul `foo` în tabelul de plugin-uri.") — the user sees the result, not a pre-edit proposal.
+#### 3c — Remove duplication between the two files
+
+Whether the files were just created, just edited, or already up to date, read both and make sure no piece of information appears in both. Duplicates drift apart over time and leave two conflicting versions of the truth, so each fact should live in exactly one place:
+
+- **Keep it in CLAUDE.md** if it is about working inside the repo: structure, conventions, workflows, constraints.
+- **Keep it in README.md** if it is for someone discovering or using the project: purpose, install, usage.
+- If it genuinely serves both readers, keep the full version in one file and leave at most a one-line pointer in the other (e.g., "See CLAUDE.md for repo structure and conventions.").
+
+Remove the duplicate from the file that shouldn't own it. This applies to existing content too, not only to what this step wrote.
+
+#### 3d — Commit the result
+
+If nothing changed in 3a-3c, say so in one line ("README/CLAUDE.md sunt la zi și fără duplicări.") and move on.
+
+Otherwise apply everything directly — do not propose edits and wait for approval first. Stage any newly created files (`git add`), then fold the changes into the commit from Step 2 with `git commit --amend --no-edit` if that commit hasn't been pushed anywhere yet (check with `git status -sb` or `git log @{u}..HEAD` — if the branch has no upstream, or HEAD is still ahead of it, amending is safe); if Step 2 made no commit, or the commit was already pushed, create a small separate commit ("docs: update README/CLAUDE.md for <branch>") rather than rewriting already-pushed history. Report what was done in one line per file per the Output and Context Rules above (e.g., "CLAUDE.md creat: structură, convenții, workflow-uri." / "README.md actualizat: secțiunea de structură mutată în CLAUDE.md.") — the user sees the result, not a pre-edit proposal.
 
 ### Step 4 — Finish the branch
 
@@ -102,7 +130,7 @@ If Step 4 did merge locally into the main branch, tag that merge commit with the
 
 1. **Determine the slug.** Two sources, in order of preference:
    - The current branch name, if it carries the slug directly (branches created by `superpowers:using-git-worktrees` or other skills in this plugin are typically named after the slug, e.g. `auth-forms` or `feature/auth-forms`) — branch names never carry a feature-id prefix, only the slug.
-   - `docs/<feature-id>-<slug>-SPEC.md` / `docs/<feature-id>-<slug>-PLAN.md` / `docs/<feature-id>-<slug>-PLAN-N.md` files touched on this branch (`git diff --name-only <merge-base>...HEAD -- docs/`) — the slug is the filename with both the leading two-digit `<feature-id>-` prefix AND the trailing `-SPEC`/`-PLAN`/`-PLAN-N` suffix stripped (e.g. `03-auth-forms-PLAN-1.md` → `auth-forms`). The tag itself must be the bare slug — never include `<feature-id>`.
+   - `docs/<feature-id>-<slug>-<file-id>-SPEC.md` / `docs/<feature-id>-<slug>-<file-id>-PLAN.md` / `docs/<feature-id>-<slug>-<file-id>-PLAN-N.md` files touched on this branch (`git diff --name-only <merge-base>...HEAD -- docs/`) — extract the slug by stripping the leading two-digit `<feature-id>-` prefix, the trailing `-SPEC`/`-PLAN`/`-PLAN-N` type suffix, AND the numeric `<file-id>` segment that remains just before that suffix (e.g. `03-auth-forms-9-PLAN-1.md` → strip `03-` and `-PLAN-1` → `auth-forms-9` → strip the trailing `-9` → `auth-forms`). The tag itself must be the bare slug — never include `<feature-id>` or `<file-id>`.
 
    If both sources point to the same slug, or only one source yields a slug, use it directly — no need to ask. If they disagree, or neither yields anything, ask the user once, briefly: *"Care e slug-ul feature-ului pentru tag? (ex: auth-forms)"* — do not let this block or unwind the merge that already happened; the tag can be added after the fact once you have an answer.
 

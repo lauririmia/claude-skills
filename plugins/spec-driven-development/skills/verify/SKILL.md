@@ -15,20 +15,22 @@ Use **Claude Sonnet** (`claude-sonnet`) with **medium thinking effort** for all 
 
 Conduct all dialogue with the user — status updates, the consolidated report, the merge/cleanup question — exclusively in Romanian, regardless of the language the plan was written in.
 
-All deliverables this skill writes or updates (`docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md`) must always be written in English, independent of the Romanian dialogue above.
+All deliverables this skill writes or updates (`docs/<feature-id>-<idea-slug>-<file-id>-ISSUE-N-LOG.md`) must always be written in English, independent of the Romanian dialogue above.
 
 ## Invocation
 
 Pass the plan file path explicitly:
 
-> `/review-me docs/<feature-id>-<idea-slug>-PLAN.md`
-> `/review-me docs/<feature-id>-<idea-slug>-PLAN-N.md`
+> `/review-me docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md`
+> `/review-me docs/<feature-id>-<idea-slug>-<file-id>-PLAN-N.md`
 
-If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/01-auth-forms-PLAN.md` or `docs/01-auth-forms-PLAN-1.md`."*
+If no path is provided, stop and ask: *"Please specify the plan file path, e.g. `docs/01-auth-forms-7-PLAN.md` or `docs/01-auth-forms-7-PLAN-1.md`."*
 
 ## Feature ID Prefix
 
 Every file under `docs/` for a feature shares one `<feature-id>`. This skill reuses the SAME `<feature-id>` parsed from the plan filename (Step 1) when it locates `ISSUE-N-LOG.md` (Step 6) or the feature's `SPEC.md` (Hard Rules) — never a different id.
+
+**Algorithm B — locating an existing file by type.** To find a file of a given type for this `<feature-id>-<idea-slug>` whose `<file-id>` is not already known, glob `docs/<feature-id>-<idea-slug>-*-<TYPE>.md` (substituting the literal type, e.g. `SPEC`, `ISSUE-2-LOG`). If more than one file matches, use the one with the highest `<file-id>`.
 
 ## Output and Context Rules
 
@@ -47,9 +49,10 @@ These rules govern everything this skill prints to the main conversation.
 
 Read the file at the provided path. If it does not exist, stop and tell the user.
 
-Extract `<feature-id>`, `<idea-slug>`, and (for issue plans) the plan number from the filename:
-- `docs/01-auth-forms-PLAN.md` → feature-id = `01`, slug = `auth-forms`
-- `docs/01-auth-forms-PLAN-1.md` → feature-id = `01`, slug = `auth-forms`, plan = `1`
+Extract `<feature-id>`, `<idea-slug>`, `<file-id>`, and (for issue plans) the plan number from the filename. Given a name like `01-auth-forms-7-PLAN.md` or `01-auth-forms-7-PLAN-1.md`: `<feature-id>` is the leading numeric segment (`01`). Strip the `.md` extension and the `<feature-id>-` prefix. Then strip the known type suffix from the right (`-PLAN` or `-PLAN-<N>`, capturing `<N>` as the plan number when present). What remains ends with `-<file-id>` — that's the file-id (`7`). The rest, with that trailing numeric suffix removed, is `<idea-slug>` (`auth-forms`).
+
+- `docs/01-auth-forms-7-PLAN.md` → feature-id = `01`, slug = `auth-forms`, file-id = `7`
+- `docs/01-auth-forms-7-PLAN-1.md` → feature-id = `01`, slug = `auth-forms`, file-id = `7`, plan = `1`
 
 Hold the plan content in context — it is the reference for the review.
 
@@ -102,7 +105,7 @@ Before consolidating results, apply this checklist to the working tree. Each unc
 Present a single consolidated summary:
 
 ```
-## Review: <feature-id>-<idea-slug>-PLAN[-N]
+## Review: <feature-id>-<idea-slug>-<file-id>-PLAN[-N]
 
 ### Plan compliance (Claude)
 <issues from Step 2, or "No issues found">
@@ -123,9 +126,9 @@ If the verdict is REVISE, list exactly what needs to be fixed. Do NOT fix anythi
 
 ### Step 6 — Update issue log
 
-Only if the plan file is `docs/<feature-id>-<idea-slug>-PLAN-N.md` (an issue-derived plan):
+Only if the plan file is `docs/<feature-id>-<idea-slug>-<file-id>-PLAN-N.md` (an issue-derived plan):
 
-1. Check whether `docs/<feature-id>-<idea-slug>-ISSUE-N-LOG.md` exists — same `<feature-id>` as the plan file read in Step 1.
+1. Check whether an `ISSUE-N-LOG.md` exists for this feature — same `<feature-id>` as the plan file read in Step 1. Locate it with **Algorithm B**: glob `docs/<feature-id>-<idea-slug>-*-ISSUE-N-LOG.md`. If more than one result appears, use the one with the highest file-id.
 2. If it does not exist, do not create one — just include a note in the consolidated report (Step 5's output, as presented to the user) that the expected log was missing (log creation is `sdd:implement`'s job, not this skill's).
 3. If it exists, replace only the `## Verification` section's content (leave `## What's new in the app` and `## What was built` untouched). The first line must be exactly one of:
    - `Not yet verified` — should not normally be written here; this step always sets one of the other three.
@@ -150,4 +153,4 @@ Do NOT proceed with merge or cleanup without explicit user confirmation.
 - Do NOT invoke `executing-plans` or any implementation skill.
 - Always read the plan file before running any review.
 - `/codex:review` is standard review — do NOT use `/codex:adversarial-review` (design decisions are already settled at this stage).
-- After a REVISE verdict, check whether `docs/<feature-id>-<idea-slug>-SPEC.md` (same `<feature-id>` as the plan) needs updating to reflect decisions made during implementation before re-running verify.
+- After a REVISE verdict, check whether the feature's `SPEC.md` (same `<feature-id>` as the plan; locate it with **Algorithm B**: glob `docs/<feature-id>-<idea-slug>-*-SPEC.md`, using the highest file-id if more than one match) needs updating to reflect decisions made during implementation before re-running verify.
