@@ -23,5 +23,10 @@ Tools for creating and managing AI avatars.
 4. `/aia:voice` — Builds a detailed, lockable voice prompt (accent, age, register, energy, expanded
    into a full description) for the character, then renders their approved scripts into audio once
    the voice is approved. Requires the character profile, and the scripts to render.
+5. `/aia:video` — Generates short vertical video clips (talking, interview, silent text-over
+   b-roll, continuation) from the character sheet, a location still, and the locked voice, in three
+   approved stages: short brief → full house-method prompt (with a mandatory relight block) → the
+   rendered clip. Requires the character sheet and a location; talking/interview clips also need
+   the locked voice and an approved script.
 
 More skills will be added under `skills/`, each invoked as `/aia:<skill-name>`.
