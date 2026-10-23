@@ -95,3 +95,8 @@ image/video prompt for this character — that's what keeps the character consis
 generations, and changing that wording later will drift the character's appearance.
 
 Ask if they want any part regenerated or adjusted before treating the character as final.
+
+## Next
+
+Once the character is approved, recommend running `/aia:images` next to generate their face anchor,
+character sheet, locations, and Instagram-style photos.

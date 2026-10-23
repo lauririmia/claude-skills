@@ -101,3 +101,8 @@ Generate audio through whatever voice-generation tool is available in this sessi
 every script so they all come out as the same consistent voice. Save/download each resulting audio
 file and tell the user where to find them. If a script fails to render well, fix the issue with the
 specific script or a targeted line in the voice prompt — not by relocking a different voice.
+
+## Next
+
+Once the audio is approved, recommend running `/aia:video` next to turn the character sheet,
+locations, and this voice into actual video clips.

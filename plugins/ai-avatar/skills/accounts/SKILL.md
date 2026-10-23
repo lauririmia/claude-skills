@@ -83,3 +83,8 @@ Present the full set, and let the user adjust any piece before treating it as fi
 
 More account types can be added to this skill the same way as these two — each one producing its
 own full name/username/password/bio-style materials, never performing the signup itself.
+
+## Next
+
+Once the accounts are set up, recommend running `/aia:product` next to build this character's
+first sellable digital product.

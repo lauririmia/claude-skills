@@ -224,3 +224,8 @@ Every prompt you write for this stage follows this exact shape:
 Generate the profile picture and the candid set through the Higgsfield Soul 2.0 model via the
 available image tool. Work with the user on each image — regenerate or adjust individual shots —
 until the set is approved.
+
+## Next
+
+Once the image set is approved, recommend running `/aia:content` next to plan what this character
+should actually post.

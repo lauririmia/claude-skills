@@ -220,3 +220,8 @@ rewriting the whole prompt:
 | Overacting / puppet-like | Add "never staged, never stiff, never puppet-like"; lean on the task, not choreography |
 | Wrong spoken language | State "speaks ONLY English throughout" (or the intended language) in both the top-priority list and the audio section |
 | Doesn't fit in 30 seconds | Tighten pacing, or split into two clips with one hard cut / a Continuation prompt |
+
+## Next
+
+Once clips are approved, recommend running `/aia:accounts` next to prepare the character's email
+and Instagram account materials, if that hasn't been done yet.

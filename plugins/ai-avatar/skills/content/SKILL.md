@@ -141,3 +141,8 @@ Note what this example does: it opens with the exact hook line, uses a numbered 
 conversational throughout, and closes on an in-character line rather than trailing off.
 
 Present each script to the user and work with them on revisions until the batch is approved.
+
+## Next
+
+Once scripts are approved, recommend running `/aia:voice` next to lock the character's voice and
+render these scripts into audio.
