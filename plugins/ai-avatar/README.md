@@ -32,5 +32,10 @@ Tools for creating and managing AI avatars.
    name/DOB/username/password for an email account, and name/username/password/profile-picture
    pick/bio for an Instagram account. Never creates the accounts or enters credentials anywhere —
    the user signs up themselves with the materials it hands over.
+7. `/aia:product` — Pitches 3 ranked low-ticket digital product ideas for the character, builds the
+   one the user picks into a finished styled PDF with their cover photo, audits it, hands it over
+   for the user's own review, then delivers a sales blurb, a longer marketing description,
+   captions, and a price recommendation. Requires the character profile and niche; the cover needs
+   the character sheet from `/aia:images`.
 
 More skills will be added under `skills/`, each invoked as `/aia:<skill-name>`.
