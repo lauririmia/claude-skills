@@ -20,5 +20,8 @@ Tools for creating and managing AI avatars.
 3. `/aia:content` — Researches the character's niche and proposes a ranked list of content ideas
    (opening line, format, setting, why it should work), then writes full 15-30 second scripts for
    the ideas the user picks. Requires the character profile and niche.
+4. `/aia:voice` — Builds a detailed, lockable voice prompt (accent, age, register, energy, expanded
+   into a full description) for the character, then renders their approved scripts into audio once
+   the voice is approved. Requires the character profile, and the scripts to render.
 
 More skills will be added under `skills/`, each invoked as `/aia:<skill-name>`.
