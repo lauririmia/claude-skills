@@ -28,5 +28,9 @@ Tools for creating and managing AI avatars.
    approved stages: short brief → full house-method prompt (with a mandatory relight block) → the
    rendered clip. Requires the character sheet and a location; talking/interview clips also need
    the locked voice and an approved script.
+6. `/aia:accounts` — Prepares the account creation materials for the character: full
+   name/DOB/username/password for an email account, and name/username/password/profile-picture
+   pick/bio for an Instagram account. Never creates the accounts or enters credentials anywhere —
+   the user signs up themselves with the materials it hands over.
 
 More skills will be added under `skills/`, each invoked as `/aia:<skill-name>`.
