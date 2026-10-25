@@ -53,6 +53,8 @@ The `commit-message` skill will:
 
 Wait for the commit to complete before proceeding. Report only the commit subject line back to the user.
 
+Note whether the changes committed here included anything other than documentation (`docs/`, README, CLAUDE.md). If they did — typically leftover code edits after `sdd:revise` — that code postdates the last test run; remember this as **untested code committed**, because Step 4's post-merge check depends on it.
+
 ### Step 3 — Create or update README.md / CLAUDE.md, without duplication
 
 The two files have different readers, and that difference is what decides where each fact goes:
@@ -107,13 +109,17 @@ Otherwise apply everything directly — do not propose edits and wait for approv
 
 ### Step 4 — Finish the branch
 
-Tests were already run during `sdd:implement` and `sdd:verify` — do not ask the user whether to re-run them, and do not re-run them here. Invoke `superpowers:finishing-a-development-branch` to handle the remainder:
+Tests were already run during `sdd:implement` and `sdd:verify` — do not ask the user whether to re-run them, and do not re-run them before the merge. The one exception is the post-merge check inside Option 1 (Merge Locally), which runs only when the merge result could differ from the code already tested. Invoke `superpowers:finishing-a-development-branch` to handle the remainder:
 
 > Using `superpowers:finishing-a-development-branch` to complete the branch.
 
-Always include this override with the invocation:
+Always include these two overrides with the invocation:
 
 > **OVERRIDE:** Tests were already verified during `sdd:implement`/`sdd:verify` in this same session — skip Step 1 (test verification) and proceed directly to Step 2 (Detect Environment).
+>
+> **OVERRIDE (Option 1, Merge Locally):** After `git pull` and `git merge`, before running "Verify tests on merged result", compare the code that was tested with the code that was merged: `git rev-parse HEAD^{tree}` (the base branch after the merge) against `git rev-parse <feature-branch>^{tree}` (the feature branch tip, i.e. what was tested). If the two tree ids are identical — and Step 2 did not record *untested code committed* — skip the test command and say in one line that the merged tree is identical to the tested one. In every other case (the ids differ, or untested code was committed) run the test command as usual and treat a failure exactly as that skill describes.
+
+Why the comparison happens after the merge and not before: `git pull` runs as part of the merge, so the base branch can still advance at that moment (a colleague pushed while the feature was in progress). The tree ids answer the real question — "is what is now on the base branch exactly what the tests ran on?" — whether the merge was a fast-forward, a plain merge commit with no other changes, or one that pulled in someone else's work or needed conflict resolution (those produce a different tree, so the check runs). A green suite proves only the tree it ran on; when the tree is the same, a second run of a long suite adds nothing.
 
 This skill will then:
 1. Detect environment (normal repo vs worktree)
