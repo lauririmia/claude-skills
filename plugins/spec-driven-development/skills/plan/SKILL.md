@@ -134,12 +134,18 @@ Use the `Skill` tool to invoke `superpowers:writing-plans` with these overrides:
 > **OVERRIDE 5 — plan writing & review:** When the plan is ready to be written:
 > 1. Before writing, calculate `<file-id>` using Algorithm A (Step 1) if not already computed. Apply OVERRIDE 8's Task N/TOTAL numbering to every task heading, then write the plan directly to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (or `PLAN-N.md`) without displaying its full content in the console. Just confirm the path.
 > 2. Tell the user: *"Plan written to `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md`. Please review it and let me know if you have any changes or if you approve."*
-> 3. If the user provides feedback, update the file accordingly — including reapplying OVERRIDE 8 if the number of tasks changed — and ask again.
+> 3. If the user provides feedback, update the file accordingly — including reapplying OVERRIDE 8 and OVERRIDE 9 if the tasks changed — and ask again.
 > 4. When the user explicitly approves (e.g. "looks good", "approve", "done", "ok"), return control — do NOT commit here.
 
 > **OVERRIDE 7 — granularity:** A granularity was determined above this invocation (auto-selected Balanced, or the user's explicit choice). Include that choice **verbatim** here (e.g. "OVERRIDE 7 — granularity: the user chose 'Balanced — one step per logical unit of work'; size all plan steps accordingly"), since writing-plans is an invoked skill, not a typed API — the constraint only takes effect if it is literally present in this prompt.
 
 > **OVERRIDE 8 — task numbering:** Write every task heading as `### Task N/TOTAL: [Component Name]` instead of the default `### Task N: [Component Name]`, where `TOTAL` is the total number of tasks in the plan's current draft. This lets anything that echoes a task's title later — most importantly the per-task subagent labels `superpowers:subagent-driven-development` produces during `/implement` (e.g. "Implement Task 4: ...") — carry the total task count too, so progress is visible without opening the plan file. Count the `### Task` headings once the full task list is drafted to get `TOTAL`, then stamp it into every heading; recompute and restamp `TOTAL` on every write of the plan document, not just the first — OVERRIDE 5 steps 1 and 3 both call back to this, since a feedback round can add, remove, or merge tasks and leave a stale count otherwise. This numbering lives only in this plan's headings; it doesn't require any change to `writing-plans` itself.
+
+> **OVERRIDE 9 — test commands section:** Right after the plan's title/header block and before the first task, include a `## Test Commands` section with exactly these two entries:
+> - **Feature tests:** one command (or a short list of commands) that runs every test this plan adds, plus any existing tests it modifies. It is the union of the per-task test commands, gathered in one place, so it can be run quickly and repeatedly. The per-task commands stay in each task as well.
+> - **Full suite:** the project's complete test command, the one that also runs all pre-existing tests. Find it in `CLAUDE.md`, `README`, `package.json` / `pyproject.toml` / `Makefile` scripts, or CI config. If it cannot be determined, do not invent one: write `TO CONFIRM` and ask the user during the plan review (OVERRIDE 5, step 2).
+>
+> Keep the two apart because they serve different purposes: the implementation and fix loops run only Feature tests (seconds to minutes) so each iteration is fast, while Full suite (which can take many minutes on a mature project) runs once as a final regression gate. Recompute and rewrite the Feature tests entry on every write of the plan, as OVERRIDE 8 does for task numbering, since feedback rounds can add or remove tasks.
 
 Follow every other writing-plans step as written.
 

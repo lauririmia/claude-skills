@@ -52,6 +52,8 @@ If neither source yields a problem, stop and tell the user explicitly:
 
 Also deduce the plan file path (`docs/<feature-id>-<slug>-<file-id>-PLAN.md` or `docs/<feature-id>-<slug>-<file-id>-PLAN-N.md`) from context — `/sdd:verify`'s own invocation in this conversation references it, feature-id and file-id included. Given a filename like `01-auth-forms-7-PLAN.md` or `01-auth-forms-7-PLAN-1.md`: `<feature-id>` is the leading numeric segment (`01`). Strip the `.md` extension and the `<feature-id>-` prefix, then strip the known type suffix from the right (`-PLAN` or `-PLAN-<N>`). What's left ends in `-<file-id>` — that's the file-id (`7`) — and the remainder, with that trailing numeric suffix removed, is `<idea-slug>` (`auth-forms`). If it cannot be deduced, ask the user explicitly: *"Which plan file is this for, e.g. `docs/01-auth-forms-7-PLAN.md` or `docs/01-auth-forms-7-PLAN-1.md`?"* The `<feature-id>` and `<idea-slug>` parsed or given here are reused as-is to locate the `ISSUE-N-LOG.md` this skill may update (Step 2c) — never recompute them. Note that `ISSUE-N-LOG.md` may carry a different file-id than the plan, since file-ids are assigned per file at creation time, not shared across types — locate it by globbing `docs/<feature-id>-<idea-slug>-*-ISSUE-N-LOG.md` (see Step 2c).
 
+Also resolve the test commands from the plan's `## Test Commands` section: **`<FEATURE_TESTS>`** (only the tests this plan adds or modifies) and **`<FULL_SUITE>`** (the whole project's suite). They are kept apart because a mature project's full suite can take many minutes: fix iterations run only Feature tests for fast feedback, and the full suite runs once at the end (Step 3) to prove nothing pre-existing broke. If the section is missing (an older plan) or `<FULL_SUITE>` reads `TO CONFIRM`, build `<FEATURE_TESTS>` from the per-task commands, find `<FULL_SUITE>` in `CLAUDE.md`, `README`, `package.json` / `pyproject.toml` / `Makefile` or CI config, and ask the user once if it can't be determined — never guess. State both commands to the user in one line.
+
 ### Step 2 — Process each problem, one at a time
 
 Handle problems sequentially — confirm and fix one completely before moving to the next. Do not batch them into a single subagent dispatch.
@@ -72,8 +74,8 @@ Report this to the user, clearly stating why the subagent concluded the problem 
 
 #### 2c — If REAL
 
-1. Update the plan file (the exact path read in Step 1, `docs/<feature-id>-<slug>-<file-id>-PLAN[-N].md`) to reflect the fix or the new requirement being made. Write back to that same path — do NOT assign it a new file-id.
-2. Use the `Agent` tool to dispatch a fix subagent — same pattern as `sdd:implement`'s Steps 2/4: write a failing regression test first (following `superpowers:test-driven-development`), then fix the implementation to make it pass. Do NOT modify the test to make it pass — fix the implementation instead.
+1. Update the plan file (the exact path read in Step 1, `docs/<feature-id>-<slug>-<file-id>-PLAN[-N].md`) to reflect the fix or the new requirement being made. Write back to that same path — do NOT assign it a new file-id. If the plan has a `## Test Commands` section, also add the command for the new regression test to its **Feature tests** entry, so later runs of `implement` or `revise` keep covering it.
+2. Use the `Agent` tool to dispatch a fix subagent — same pattern as `sdd:implement`'s Steps 2/4: write a failing regression test first (following `superpowers:test-driven-development`), then fix the implementation to make it pass. Do NOT modify the test to make it pass — fix the implementation instead. Instruct it to verify its work by running only the new regression test plus `<FEATURE_TESTS>`, never the full suite (Step 3 runs that once, so repeating it per problem would multiply a long run for no new signal).
 3. If the plan is issue-derived and an `ISSUE-N-LOG.md` exists for it (located via the glob `docs/<feature-id>-<slug>-*-ISSUE-N-LOG.md` from Step 1, using the highest file-id if more than one matches), update it at that same path — do NOT assign it a new file-id:
    - `## Verification` — new status reflecting the fix (e.g. `Verified after fixes`), with a bullet naming what was wrong and what changed.
    - `## What was built` — only if the fix touched files, models, routes, or contracts that a future issue may depend on.
@@ -81,12 +83,17 @@ Report this to the user, clearly stating why the subagent concluded the problem 
 
 ### Step 3 — Run the full test suite
 
-After all problems have been processed, use the `Agent` tool to dispatch a separate testing subagent to run the **full** test suite, including any regression tests added in Step 2c. Instruct it to report concisely: pass/fail counts and, for each failure, only the test name plus a 1-3 line error excerpt (not the full stack trace).
+After all problems have been processed, use the `Agent` tool to dispatch a separate testing subagent that runs two phases:
+
+- **Phase A — Feature tests:** `<FEATURE_TESTS>`, which includes the regression tests added in Step 2c, plus any extra failing tests named in the dispatch (empty on the first round).
+- **Phase B — Full suite:** `<FULL_SUITE>`, only if every Phase A command passed. If Phase A failed, skip Phase B and say so — a long regression run is pointless while the feature's own tests are red. Run it to completion and print the exact command in the report.
+
+Instruct it to report concisely: per-phase pass/fail counts, an overall PASS only if both phases ran and passed, and for each failure only the test name plus a 1-3 line error excerpt (not the full stack trace).
 
 If the testing subagent reports failures:
-1. Dispatch a new fix subagent with the failure output, instructed to report back with a 1-2 line summary of the fix, not a diff dump.
-2. Re-dispatch the testing subagent.
-3. Repeat until all tests pass, showing the user only the current round's pass/fail counts between iterations — not a cumulative log of every prior round.
+1. Dispatch a new fix subagent with the failure output, instructed to verify its fix by running only the previously failing tests plus `<FEATURE_TESTS>` (never the full suite), and to report back with a 1-2 line summary of the fix, not a diff dump.
+2. Re-dispatch the testing subagent, naming the previously failing tests as the extra tests for Phase A.
+3. Repeat until both phases pass, showing the user only the current round's pass/fail counts between iterations — not a cumulative log of every prior round.
 
 ### Step 4 — Report and recommend next step
 
@@ -115,4 +122,5 @@ If every problem turned out to be a false positive, skip this recommendation —
 - Never skip the confirmation step, even when a problem looks obviously real.
 - Do NOT ask the user to run `/clear` before this skill — that would destroy the context this skill depends on.
 - Do NOT modify tests to make them pass — fix the implementation instead.
+- Run the full test suite only as the Phase B gate in Step 3 — never inside the per-problem fix subagents, which run only the new regression test and Feature tests.
 - Process problems one at a time — confirm and fully resolve one before starting the next.

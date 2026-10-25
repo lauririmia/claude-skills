@@ -45,10 +45,23 @@ These rules govern everything this skill prints to the main conversation — sub
 
 Every subagent dispatched by this skill (the implementation subagent in Step 2, the testing subagent in Step 4, and any fix subagent spawned during Step 4's failure loop) is watched under the same rule, so a stuck subagent never silently stalls the whole run:
 
-1. **Arm a 5-minute check right after dispatch.** Call `TaskOutput` on the subagent's task with `block: true` and `timeout: 300000` (5 minutes). If it returns because the subagent finished, proceed normally — read its report and move on.
-2. **If the call times out instead of completing**, the subagent has gone 5 minutes with no result. Call `TaskOutput` again with `block: false` to snapshot its current output, and check `ListAgents` to confirm whether it's still listed as running. Use that snapshot to judge whether it's making real progress (output growing, distinguishable steps happening) or genuinely stuck (output frozen, repeating the same action, or erroring silently).
-3. **First time a given subagent looks stuck:** stop it with `TaskStop`, tell the user in one line that the subagent stalled and is being restarted, then re-dispatch the exact same task (same prompt, same plan path) via the `Agent` tool as a fresh subagent, and re-arm a new 5-minute `TaskOutput` check (back to step 1) for it.
-4. **Second time the same task's subagent stalls** (i.e. the restarted subagent also fails to complete within its 5-minute window): stop it with `TaskStop` and stop delegating that task to a subagent entirely. Tell the user in one line that delegation failed twice and execution is moving inline. Take over the task yourself, running it directly in the main thread instead of a subagent — this sacrifices the clean-context benefit of subagents, but running it inline is what lets you observe the exact commands and output as they happen, which is what's needed to debug why it kept stalling. Continue the skill's process from there once the inline run finishes.
+There is no tool that blocks until a subagent finishes: subagents run in the background and their completion arrives as a notification in a later turn. So a stall can't be detected by a timeout on the subagent itself — it is detected by looking for outside evidence of progress. Elapsed time only decides *when to look*; the evidence decides whether the subagent is stuck. This matters because a healthy subagent can legitimately go many minutes without finishing (a browser test suite alone can take ~5 minutes), and restarting it would throw away real work.
+
+1. **Dispatch, then wait for the completion notification.** Do not poll in a loop. When the notification arrives, read the report and proceed normally. Record the dispatch time and the current `git rev-parse HEAD` so later checks have a baseline. To be woken by a concrete event instead of guessing, arm a watcher rather than sleeping for a fixed time: for a single wake-up (e.g. "a new commit appeared on `HEAD`") run a Bash command with `run_in_background` that loops `until [ "$(git rev-parse HEAD)" != "$base" ]; do sleep 1; done` and exits — you get one notification when it ends. For a stream of events plus stall detection, use `Monitor` with a loop that prints one line per new commit and a `STALL` line (then exits) after a chosen stretch with no new commit and no live test process. Always make the stall condition print something: a watcher that only reports the happy path stays silent exactly when the subagent is stuck.
+2. **After ~5 minutes with no notification, check for progress.** Gather these signals (cheap, read-only):
+   - `ListAgents` — the "Subagents" section lists each one with its state (`running`/`completed`) and how long ago it started. Note that `completed` can be an interim state if the subagent still has background work of its own running.
+   - `git log --oneline <baseline>..HEAD` and `git status --short` — new commits since dispatch, or changed/new files compared with the previous check.
+   - Active test or build processes, adjusted to the plan's test commands. Use `ps -eo pid,etime,args | grep -E '[p]ytest|[n]pm|[p]laywright|[v]itest|[j]est' | grep -v 'bash -c'`. A plain `pgrep -f` matches the very shell running the check (its command line contains the pattern) and would report a live test process every time; the `[p]` bracket trick plus dropping the `bash -c` wrapper line avoids that false positive. `etime` shows how long the process has been running.
+
+   Any one of these counts as progress: a new commit, a different set of modified files than at the last check, or a live test/build process. A subagent running a long test suite is active even with no new commits. If there is progress, it is not stuck — keep waiting and check again after another ~5 minutes.
+3. **No progress since the previous check** (no new commit, `git status` unchanged, no test/build process, subagent still listed as running or already gone without a report) means it is stuck. The first time this happens for a given task:
+   1. Stop it with `TaskStop`.
+   2. Make the working tree clean before relaunching, so the fresh subagent starts from a known state and doesn't build on half-written edits. If `git status` shows uncommitted changes, set them aside with `git stash push -u -m "stalled subagent: <task>"` — nothing is lost, and the user can recover it. Never discard changes with `reset` or `checkout`.
+   3. Tell the user in one line that the subagent stalled, was restarted, and whether anything was stashed.
+   4. Re-dispatch the same task (same prompt, same plan path) via the `Agent` tool as a fresh subagent, appending a short note listing which tasks are already committed (from `git log`) so it resumes after them instead of redoing them. Return to step 1 for the new subagent.
+4. **Second time the same task's subagent is stuck:** stop it with `TaskStop` (and clean the tree as above) and stop delegating that task to a subagent entirely. Tell the user in one line that delegation failed twice and execution is moving inline. Take over the task yourself, running it directly in the main thread instead of a subagent — this sacrifices the clean-context benefit of subagents, but running it inline is what lets you observe the exact commands and output as they happen, which is what's needed to debug why it kept stalling. Continue the skill's process from there once the inline run finishes.
+
+The signals in step 2 only exist if subagents leave them behind, which is why the dispatch prompts below require a commit after every task. The testing subagent in Step 4 makes no commits by design, so for it the signals are `ListAgents` and live test processes.
 
 This escalation is per-task: a fresh task dispatched later in the skill (e.g. the testing subagent after implementation succeeds) starts its own fresh two-strike count.
 
@@ -61,6 +74,15 @@ Extract `<feature-id>`, `<idea-slug>`, `<file-id>`, and (for issue plans) the pl
 Examples:
 - `docs/01-auth-forms-7-PLAN.md` → feature-id = `01`, slug = `auth-forms`, file-id = `7`
 - `docs/01-auth-forms-7-PLAN-1.md` → feature-id = `01`, slug = `auth-forms`, file-id = `7`, plan = `1`
+
+**Resolve the test commands.** Read the plan's `## Test Commands` section and hold two things for the rest of the run:
+
+- **`<FEATURE_TESTS>`** — the command(s) that run only the tests this plan adds or modifies.
+- **`<FULL_SUITE>`** — the command that runs the whole project's test suite.
+
+They are kept apart because a mature project's full suite can take many minutes, and running it on every implementation and fix iteration multiplies that cost for no extra signal: the feature's own tests catch problems in the new code quickly, and the full suite only needs to run once, at the end, to prove nothing pre-existing broke.
+
+If the section is missing (a plan written before it existed) or `<FULL_SUITE>` reads `TO CONFIRM`: build `<FEATURE_TESTS>` from the per-task test commands in the plan, and find `<FULL_SUITE>` in `CLAUDE.md`, `README`, `package.json` / `pyproject.toml` / `Makefile` or CI config. If it still can't be determined, ask the user once for the command — never guess one. Then state both commands to the user in one line so a wrong one is caught before it is used.
 
 ### Step 2 — Dispatch implementation subagent
 
@@ -84,14 +106,17 @@ Instructions:
 - The dispatching this skill asks you to do is limited to what `superpowers:subagent-driven-development` itself defines (its per-task implementer and reviewer subagents). Do not invent any further layer of delegation beyond that — e.g. don't have a per-task implementer spawn its own helper subagent, and don't route work through any subagent mechanism this skill doesn't call for.
 - Before every use of the `Edit` tool on an existing file — even one you believe a prior task already created — use the `Read` tool on it first, in this subagent's own context; using `Write` to create a genuinely new file needs no prior Read. If `Edit` or `Write` fails, `Read` the file (or confirm it doesn't exist) and retry the same tool — never fall back to a raw shell command (e.g. `sed`, `cat >`) to force the change through.
 - Do NOT modify tests to make them pass — fix the implementation instead.
+- Commit after every completed task (a normal commit with a short message naming the task), before starting the next one. The dispatching agent cannot see inside your work, so commits are the only way it can tell you are progressing rather than stuck — and if you are ever restarted, committed tasks are skipped instead of redone. Also begin each task by checking `git log` to see which tasks are already committed, and resume after them.
 - For framework-specific patterns (React hooks, routing, auth, database ORM, etc.), verify against official documentation before implementing.
-- After all tasks are complete, run the full test suite and confirm all tests pass.
-- Report back concisely: task count completed/total, overall test pass/fail counts, and any issues encountered in 1-2 lines each. Do not paste full test output or file contents in your report.
+- Run only the tests of this feature while implementing — each task's own test commands from the plan. Do NOT run the project's full test suite: it is slow, and a separate verification step runs it once after you finish. Running it here would repeat that cost without adding a signal the feature tests don't already give.
+- After all tasks are complete, run the Feature tests command below once and confirm it passes:
+  <FEATURE_TESTS>
+- Report back concisely: task count completed/total, Feature tests pass/fail counts, and any issues encountered in 1-2 lines each. State explicitly that the full suite was not run. Do not paste full test output or file contents in your report.
 ```
 
-Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1. Read that file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
+Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1 and `<FEATURE_TESTS>` with the command(s) resolved in Step 1. Read that file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
 
-Apply the **Subagent Timeout & Escalation** rules above to this dispatch. Once it completes (directly or after escalation), relay its report to the user as the short summary described in **Output and Context Rules**, not the raw subagent transcript.
+Apply the **Subagent Timeout & Escalation** rules above to this dispatch; when re-dispatching after a stall, append the note listing already-committed tasks. Once it completes (directly or after escalation), relay its report to the user as the short summary described in **Output and Context Rules**, not the raw subagent transcript.
 
 ### Step 3 — Spec divergence check
 
@@ -119,26 +144,29 @@ Read the plan file at the path above before doing anything else.
 Instructions:
 - Do NOT delegate any part of this task to another subagent — no spawning via the `Agent` tool or any similar mechanism. Run every command yourself, directly, in this thread. This task is simple enough to not need a controller/worker split, and sub-delegating would hand the actual verification to an agent nobody is tracking, making your report describe results you didn't personally observe.
 - Read the test commands and verification steps defined in the plan above.
-- Run every test and verification command.
-- Report concisely: pass/fail counts, an overall PASS / FAIL verdict, and for each failing test only its name plus a 1-3 line error excerpt (not the full stack trace or raw command output).
+- Phase A — Feature tests. Run every per-task test and verification command from the plan, the Feature tests command below, and any extra tests listed below. This is fast and tells us whether the new work is correct.
+  Feature tests: <FEATURE_TESTS>
+  Extra tests to include: <EXTRA_TESTS>
+- Phase B — Full suite. Run it only if every Phase A command passed; if anything in Phase A failed, skip Phase B and say so (a failing feature makes a 20-minute regression run pointless). Full suite: <FULL_SUITE>. Run it to completion even if it takes many minutes; do not cut it short. Print the exact command you ran in your report.
+- Report concisely: for each phase, pass/fail counts; an overall PASS / FAIL verdict (PASS only if both phases ran and passed); and for each failing test only its name plus a 1-3 line error excerpt (not the full stack trace or raw command output).
 - Before every use of the `Edit` tool on an existing file — even one you believe a prior task already created — use the `Read` tool on it first, in this subagent's own context; using `Write` to create a genuinely new file needs no prior Read. If `Edit` or `Write` fails, `Read` the file (or confirm it doesn't exist) and retry the same tool — never fall back to a raw shell command (e.g. `sed`, `cat >`) to force the change through.
 - Do NOT fix anything — only report what you find.
 ```
 
-Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1. Read that file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
+Replace `<PLAN_PATH>` with the absolute path of the plan file read in Step 1, and `<FEATURE_TESTS>` / `<FULL_SUITE>` with the commands resolved in Step 1. Replace `<EXTRA_TESTS>` with `none` on the first round, and in later rounds with the names of the tests that failed in the previous round (so a regression found by the full suite is re-checked quickly in Phase A before the long Phase B reruns). Read the plan file yourself, in your own context, before starting work — do not rely on any plan content being pasted into this prompt.
 
-Apply the **Subagent Timeout & Escalation** rules above to this dispatch (and to every fix subagent dispatch below).
+Apply the **Subagent Timeout & Escalation** rules above to this dispatch (and to every fix subagent dispatch below). The testing subagent makes no commits, so judge its progress by `ListAgents` and live test processes — a Phase B that runs for 20 minutes is not a stall.
 
 If the testing subagent reports any failures:
-1. Spawn a new **fix subagent** using the Agent tool, giving it the failing test output and the plan file's absolute path (instruct it to read the plan file itself, not a pasted copy). Instruct it to fix only the failing implementation (minimal change, do not alter tests), to make the fix itself directly rather than spawning any subagent of its own (same reasoning as the testing subagent above — this is a bounded, single-context fix, not a controller task), and to report back with a 1-2 line summary of the fix, not a diff dump.
-2. Re-dispatch the testing subagent.
-3. Repeat until all tests pass.
+1. Spawn a new **fix subagent** using the Agent tool, giving it the failing test output and the plan file's absolute path (instruct it to read the plan file itself, not a pasted copy). Instruct it to fix only the failing implementation (minimal change, do not alter tests), to make the fix itself directly rather than spawning any subagent of its own (same reasoning as the testing subagent above — this is a bounded, single-context fix, not a controller task), to verify its fix by running only the previously failing tests plus the Feature tests command (never the full suite — the testing subagent runs that), to commit the fix when done, and to report back with a 1-2 line summary of the fix, not a diff dump.
+2. Re-dispatch the testing subagent, passing the names of the tests that failed as `<EXTRA_TESTS>`.
+3. Repeat until both phases pass.
 
 Show the user only the current round's pass/fail counts between iterations, not a running log of every prior round.
 
 ### Step 5 — Confirm
 
-When the testing subagent reports all tests pass, say:
+Only when the testing subagent reports PASS for both phases (Feature tests and Full suite) — a Phase A pass alone is not enough, since the full suite has not yet proven nothing pre-existing broke — say:
 
 > *"Implementation complete. All tests defined in `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` pass."*
 
@@ -181,4 +209,5 @@ If the plan is a plain `docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md` (SPEC- 
 
 - Do NOT run implementation or tests inline — always dispatch to subagents via the Agent tool, except for the second-stall inline takeover defined in **Subagent Timeout & Escalation**.
 - Do NOT modify tests to make them pass — fix the implementation instead.
+- Run the full test suite only as the Phase B gate of the testing subagent (Step 4) — never in the implementation or fix subagents, which run only Feature tests.
 - Do NOT offer to merge, create a PR, or clean up branches/worktrees — that belongs in `/verify`, after the implementation has been validated.

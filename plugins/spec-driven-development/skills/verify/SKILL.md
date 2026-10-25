@@ -56,11 +56,21 @@ Extract `<feature-id>`, `<idea-slug>`, `<file-id>`, and (for issue plans) the pl
 
 Hold the plan content in context — it is the reference for the review.
 
+### Step 1b — Determine the review scope
+
+`sdd:implement` and `sdd:revise` have their subagents commit after every task, so by the time this skill runs the implementation is usually already committed on the branch, with perhaps a few leftover uncommitted edits. A review that looks only at uncommitted changes would see a near-empty diff and pass trivially. Instead, review everything the branch has changed relative to its base, committed or not, and use that same scope in both Step 2 and Step 3 so the two reviews agree on what they are looking at.
+
+1. **Find the base branch.** Try `git symbolic-ref --short refs/remotes/origin/HEAD` (strip the `origin/` prefix), then fall back to `main`, then `master`, whichever exists. If the current branch *is* the base branch (the diff against itself would be empty), or none can be determined, stop and ask the user: *"Against which branch should I review the changes (e.g. `main`)?"* — do not guess.
+2. **Compute the merge-base:** `git merge-base HEAD <base>`. The diff of the work is `git diff <merge-base>`: it contains the branch's commits plus tracked uncommitted edits, which is exactly the implementation under review.
+3. **Make untracked files visible.** `git diff` and Codex's `--base` mode both skip untracked files, so a new file that was never `git add`ed would silently escape review. Run `git ls-files --others --exclude-standard`; if it lists files, register them with `git add -N -- <files>` (intent-to-add: this records only that the paths exist, stages no content, and commits nothing). Mention it to the user in one line.
+
+Remember `<base>` and `<merge-base>` for the next two steps.
+
 ### Step 2 — Plan compliance review (Claude)
 
-Use the `Agent` tool with `subagent_type: "feature-dev:code-reviewer"` to run a plan-compliance review with this override:
+Use the `Agent` tool with `subagent_type: "feature-dev:code-reviewer"` to run a plan-compliance review with this override (substitute the `<merge-base>` from Step 1b):
 
-> **OVERRIDE — focus:** Review the git diff (unstaged changes) against the plan read in Step 1. For each issue found, explicitly state which part of the plan it violates or misses. Ignore issues unrelated to the plan scope.
+> **OVERRIDE — focus:** Review the output of `git diff <merge-base>` (the branch's commits plus any uncommitted changes) against the plan read in Step 1. For each issue found, explicitly state which part of the plan it violates or misses. Ignore issues unrelated to the plan scope.
 
 Report only issues with confidence ≥ 80, as per the agent's standard threshold.
 
@@ -69,12 +79,14 @@ Report only issues with confidence ≥ 80, as per the agent's standard threshold
 `codex:review` is a slash command with `disable-model-invocation: true` and cannot be invoked via the `Skill` tool — instead, run the `codex` binary directly through the Bash tool, non-interactively, with a bounded timeout:
 
 ```bash
-codex review --uncommitted "Review the uncommitted changes in this working tree for correctness and code quality. Report concrete issues found."
+codex review --base <base>
 ```
+
+Use the `<base>` branch from Step 1b. Pass **no prompt**: `codex review` rejects a prompt combined with `--base`, `--uncommitted` or `--commit` (it exits immediately with a usage error), so adding review instructions here would make the whole step fail. The default review already targets correctness and code quality. `--base` reviews everything the branch changed relative to the base (commits and tracked uncommitted edits); this is why Step 1b registers untracked files first.
 
 Use the Bash tool's `timeout` parameter set to 300000 (300 seconds / 5 minutes).
 
-If the `codex` binary is unavailable, the command exits non-zero (auth failure, etc.), or it hits the timeout, report that the Codex review could not run and let the user decide whether to proceed to Step 4 without it or stop and fix Codex access first — do not silently skip this step or block indefinitely.
+If the `codex` binary is unavailable, the command exits non-zero (a usage error, auth failure, etc.), or it hits the timeout, report that the Codex review could not run and let the user decide whether to proceed to Step 4 without it or stop and fix Codex access first — do not silently skip this step or block indefinitely.
 
 This pass catches defects that Claude may have missed — it has no plan context and reviews purely for technical correctness. Any findings Codex does return are advisory input into Step 5's overall PASS/FAIL determination alongside `verify`'s other checks — they don't auto-fail the run on their own, but weigh them the same way findings from `verify`'s other steps are weighed when producing the final verdict. When relaying its findings in Step 5, summarize each as a 1-2 line issue statement — do not paste Codex's raw output or full diff commentary into the chat.
 
@@ -153,4 +165,5 @@ Do NOT proceed with merge or cleanup without explicit user confirmation.
 - Do NOT invoke `executing-plans` or any implementation skill.
 - Always read the plan file before running any review.
 - `/codex:review` is standard review — do NOT use `/codex:adversarial-review` (design decisions are already settled at this stage).
+- Never review with `--uncommitted` alone: once implementation is committed per task, it sees almost nothing. Always review against the base branch from Step 1b.
 - After a REVISE verdict, check whether the feature's `SPEC.md` (same `<feature-id>` as the plan; locate it with **Algorithm B**: glob `docs/<feature-id>-<idea-slug>-*-SPEC.md`, using the highest file-id if more than one match) needs updating to reflect decisions made during implementation before re-running verify.
