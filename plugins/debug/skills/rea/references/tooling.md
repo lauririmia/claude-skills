@@ -28,7 +28,7 @@ On Linux, REA needs a procps-compatible `ps` on `PATH` for process-ownership che
 
 | Target | Native engine needed? |
 |---|---|
-| Chrome/Edge extension, Electron app, any JS | No — static JavaScript inspection |
+| Chrome/Edge extension, Electron app, any JS | Not for the JS itself (static inspection), but **Ghidra is recommended as a companion**: extensions/Electron may bundle WASM, `.node` addons, helper executables or native-messaging hosts that only a native engine reads |
 | Website | A Chrome-family browser for observation |
 | .NET assemblies | No |
 | Native binary (ELF/PE/Mach-O), native modules, firmware | Yes — Ghidra (default), Hopper/IDA/Kuna alternatives |
@@ -37,7 +37,7 @@ On Linux, REA needs a procps-compatible `ps` on `PATH` for process-ownership che
 For a desktop folder whose runtime is unknown, start with REA's `inspect_desktop_application`; it reports
 runtime candidates without any native provider.
 
-## 3. Ghidra (only when required)
+## 3. Ghidra (default for extensions, Electron and native targets)
 
 REA does not install Ghidra. Check:
 
