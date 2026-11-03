@@ -35,10 +35,6 @@
     {
       "name": "coursiv",
       "source": "./plugins/coursiv"
-    },
-    {
-      "name": "aia",
-      "source": "./plugins/ai-avatar"
     }
   ]
 }
