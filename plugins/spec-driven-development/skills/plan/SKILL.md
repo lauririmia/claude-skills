@@ -103,14 +103,14 @@ Call `EnterPlanMode` immediately. All work happens in plan-mode to prevent accid
 
 Default to **"Balanced — one step per logical unit of work"** and proceed silently — do not ask the user, since Balanced is already the documented default and re-asking on every run adds friction without adding signal in the common case.
 
-Only surface the three-option question when the input content clearly signals, in qualitative terms (no numeric thresholds), unusually large/complex or unusually trivial scope. Example signals:
-- The scope spans multiple independent subsystems or user-facing flows.
+First form your own recommendation from the input content, in qualitative terms (no numeric thresholds). Ask the user **only if your recommendation differs from Balanced**, i.e. the input clearly signals unusually large/complex scope (recommend fewer, larger steps or more, smaller steps) or unusually trivial scope. If your recommendation is Balanced, continue without asking, even when the scope spans several independent subsystems: the user would only be confirming the default, which adds friction without changing the outcome. Example signals that may move the recommendation away from Balanced:
 - The description itself calls out unusual risk, migration, or rollback complexity.
 - The change is a single-line/trivial fix with no meaningful design decisions.
+- The scope is so large or so fragmented that Balanced would produce an unmanageable number of steps.
 
-These examples guide judgment — they don't replace it with a threshold. When one of these (or a comparable) signal is present, present exactly these three options in chat and wait for the user's choice:
+These examples guide judgment — they don't replace it with a threshold. Broad scope alone is not a reason to ask. When your recommendation differs from Balanced, present exactly these three options in chat, say which one you recommend, and wait for the user's choice:
 - **1. Fewer, larger steps** — faster execution, less intermediate validation
-- **2. Balanced** (default — recommend this unless the input suggests otherwise) — one step per logical unit of work
+- **2. Balanced** (default) — one step per logical unit of work
 - **3. More, smaller steps** — maximum checkpoints, more context-switch overhead
 
 Wording must differ by input type: when the input is `ISSUE-N.md` (already a single vertical slice from `prd`), the three options size **implementation tasks within that slice**, not features — replace "steps" wording with "implementation tasks" in the ISSUE-N.md case to avoid re-litigating PRD-level decomposition.
