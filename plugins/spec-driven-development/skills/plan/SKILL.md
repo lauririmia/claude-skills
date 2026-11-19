@@ -3,7 +3,7 @@ name: plan
 description: Transforms a SPEC.md, PRD.md, or ISSUE-N.md into a concrete TDD implementation plan saved as docs/<feature-id>-<idea-slug>-<file-id>-PLAN.md (or PLAN-N.md for issues). Enters plan-mode, invokes writing-plans, stops before execution. When invoked with a PRD.md or ISSUE-N.md (complex workflow after /prd), first confirms slug and sets up a branch or worktree before planning. Use when user says "plan me", "plan this", "make a plan from", or wants to turn a spec, PRD, or issue into a step-by-step implementation plan.
 ---
 
-# Plan-Me — Spec, PRD, or Issue to Implementation Plan
+# Plan — Spec, PRD, or Issue to Implementation Plan
 
 Reads a SPEC.md, PRD.md, or ISSUE-N.md file and produces a TDD implementation plan saved locally. Stops before execution.
 
@@ -21,9 +21,9 @@ All deliverables this skill writes (`docs/<feature-id>-<idea-slug>-<file-id>-PLA
 
 Pass the input file path explicitly:
 
-> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-SPEC.md`
-> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-PRD.md`
-> `/plan-me docs/<feature-id>-<idea-slug>-<file-id>-ISSUE-N.md`
+> `/plan docs/<feature-id>-<idea-slug>-<file-id>-SPEC.md`
+> `/plan docs/<feature-id>-<idea-slug>-<file-id>-PRD.md`
+> `/plan docs/<feature-id>-<idea-slug>-<file-id>-ISSUE-N.md`
 
 If no path is provided, stop and ask: *"Please specify the input file path, e.g. `docs/01-auth-forms-3-SPEC.md`, `docs/01-auth-forms-2-PRD.md`, or `docs/01-auth-forms-5-ISSUE-1.md`."*
 

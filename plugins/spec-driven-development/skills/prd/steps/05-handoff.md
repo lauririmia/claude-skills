@@ -5,7 +5,7 @@
 **Does:**
 
 After the commit, tell the user:
-> *"PRD and issues committed. To implement, pass each issue file to `/plan-me`."*
+> *"PRD and issues committed. To implement, pass each issue file to `/plan`."*
 
 **Stop condition:** Message delivered.
 
