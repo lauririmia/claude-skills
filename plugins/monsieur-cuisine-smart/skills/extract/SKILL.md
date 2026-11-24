@@ -1,6 +1,7 @@
 ---
 name: extract
 description: Extracts a clean, print-ready recipe in Romanian Markdown from a recipe source - the current conversation context, a pasted text, a website URL, or a video link (YouTube etc., via its transcript) - keeping only recipe content (ingredients, quantities, servings, difficulty, times, steps, serving, calories) and dropping comments, ads and product placements. First step of the mcs workflow. Use whenever the user says "/mcs:extract", wants to pull a recipe out of a link, video or page, clean up or translate a recipe, or prepare a recipe before converting it for Monsieur Cuisine Smart, even if they only paste a URL.
+allowed-tools: Bash(python3:*), WebFetch, Read
 ---
 
 # mcs:extract
@@ -75,7 +76,9 @@ Return the result directly in the chat as Markdown, using exactly this structure
 - 200 g …
 - 2 linguri …
 
-(Group under bold sub-headings like **Pentru sos** only when the source does.)
+Order of the ingredients: list them in the order they are first used in the steps, not in the order of the source's list. Ingredients used together in one step keep the source's relative order. Ingredients that appear only in serving or decoration (garnish, toppings) go last, in their own group when the source has one. If the order of use is not clear from the steps, keep the source's order. Never change a quantity or drop an ingredient while reordering; the amounts stay exactly as in the source.
+
+(Group under bold sub-headings like **Pentru sos** only when the source does; within each group, the same order-of-use rule applies. Do not invent groups to make the order look tidier.)
 
 ## Mod de preparare
 

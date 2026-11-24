@@ -29,6 +29,8 @@ Builds a clean recipe from the conversation context, pasted text, a website URL,
 
 - **Input:** optional prompt. With no prompt it uses the recipe already in the conversation, and asks for text or a link if there is none.
 - **Keeps:** ingredients, quantities, servings, difficulty, times, steps, serving, calories. Drops comments, ads and product placements.
+- **Ingredient order:** by first use in the steps (garnish last), quantities untouched; groups only when the source has them.
+- **Permissions:** `allowed-tools: Bash(python3:*), WebFetch, Read` in the skill's frontmatter, so its two scripts run without a prompt each time.
 - **Output:** Romanian Markdown in chat, formatted as a printable cooking guide, ready to copy and save before `/mcs:convert`. Missing fields are marked `nespecificat`, never invented.
 - **Web pages** are read with [skills/extract/scripts/fetch_page.py](skills/extract/scripts/fetch_page.py), which prefers the page's schema.org `Recipe` data (exact quantities) over summaries.
 - **Video transcripts** use [skills/extract/scripts/get_transcript.py](skills/extract/scripts/get_transcript.py). If `yt-dlp` is missing it installs itself under `~/.cache/mcs` (venv+pip, then `uv`, then direct download of the `yt-dlp` file), never system-wide. If the video has no usable captions (missing, or only `[Music]`) or there is no network, the skill asks the user to paste the transcript.
