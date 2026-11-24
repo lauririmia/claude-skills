@@ -21,7 +21,7 @@ Upload is done through browser automation against the Monsieur Cuisine account (
 | `workflow` | `/mcs:workflow` | ready | Orchestrator: defines the order of the skills below and which ones exist yet |
 | `extract` | `/mcs:extract` | ready | Turn a source into a clean, print-ready Romanian Markdown recipe |
 | `convert` | `/mcs:convert` | ready | Convert the extracted recipe into the Monsieur Cuisine Smart form fields |
-| `upload` | `/mcs:upload` | planned | Save the recipe to the Monsieur Cuisine account via the browser |
+| `upload` | `/mcs:upload` | ready | Fill the Monsieur Cuisine form in the browser from the convert output and save it |
 
 ### `extract` — `/mcs:extract`
 
@@ -41,11 +41,23 @@ Converts the recipe from `/mcs:extract` into the exact content of the monsieur-c
 
 - **Input:** the extract output, pasted in chat or already in the conversation.
 - **Flow:** (1) asks the user, one question at a time with a recommended option, about anything ambiguous (over-capacity quantities, unclear portions, missing data); (2) maps the recipe to the form: units limited to the form's list (liquids converted to grams), ingredient additions as Cântar steps, cooking as device programs within their ranges; (3) estimates nutrition per portion from web research; (4) finds the recipe image on the source page and crops it to 1560×945 px, or asks the user for one — if none fits, it offers a ready-to-paste ChatGPT image prompt for the dish (it never stretches a small image).
+- **Credits:** when the source was a website or video URL, the short description ends with a blank line and `Credits: <URL>`, always with a clean URL (tracking parameters such as `utm_*`, `si`, `feature`, `fbclid` removed); the 240-character limit counts that line too.
 - **Output:** one Markdown block in chat (nothing written to disk except the image `<slug>-mcs.jpg`), ready for copy/paste and for the future `upload` skill.
 - **References** (bundled in [skills/convert/references/](skills/convert/references/)): form schema, device capabilities (from the manual) and preparation tips.
 - **Image script:** [skills/convert/scripts/prepare_image.py](skills/convert/scripts/prepare_image.py) (uses Pillow, installed temporarily through `uv` if missing).
 
 See [skills/convert/SKILL.md](skills/convert/SKILL.md).
+
+### `upload` — `/mcs:upload`
+
+Fills the "Creare rețetă" form on monsieur-cuisine.com (MC smart) from the `/mcs:convert` block, using the browser pane.
+
+- **Handed to the user:** login (it never types passwords), choosing the device if asked, the image file picker, and the "created with AI" declaration.
+- **Asks first:** ticking the terms of use, saving as project, and finalizing.
+- **Flow:** details → time → ingredients (groups, units) → steps (text, Cântar, Gătire manuală, Aluat moale and the other programs) → "Salvare proiect" (gives a `recipe-id`). "Completare rețetă → Salvare ca privat" only on the user's explicit request; it never publishes.
+- **Quirks** (late-appearing controls, what `form_input` cannot set, sliders by keyboard) are listed in the skill.
+
+See [skills/upload/SKILL.md](skills/upload/SKILL.md).
 
 See [skills/workflow/SKILL.md](skills/workflow/SKILL.md) for the pipeline details.
 

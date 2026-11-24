@@ -18,7 +18,7 @@ All in `references/` next to this file.
 ## Flow
 
 ### 1. Get the recipe
-Use the recipe pasted with the call, or the `/mcs:extract` output already in the conversation. If there is none, ask the user to paste it (or run `/mcs:extract` first). Keep the `Sursă:` line: the image step needs the source URL.
+Use the recipe pasted with the call, or the `/mcs:extract` output already in the conversation. If there is none, ask the user to paste it (or run `/mcs:extract` first). Keep the `Sursă:` line: the image step needs the source URL, and the short description ends with a credit to it when it is a web page or a video link (see "Credits" in step 3).
 
 ### 2. Find what needs clarifying, then ask, one question at a time
 Read the whole recipe against the form and the device limits and list the items that need the user's judgment. Typical ones:
@@ -37,6 +37,7 @@ For each item use `AskUserQuestion` with 2–4 concrete answer options, the reco
 Follow the schema exactly. The points that most often go wrong:
 
 - **Limits:** name ≤ 86 chars, short description ≤ 240, step title ≤ 80, step instructions ≤ 240. Cut by rewording, never by chopping a sentence in the middle. Write the name and the texts in Romanian.
+- **Credits (short description):** when the recipe came from a URL (a website or a video such as YouTube, i.e. the `Sursă:` line of `/mcs:extract` holds a URL, or the user gave one in the first step), the short description ends with a blank line and then `Credits: <URL>`. When the source is pasted text, an image or the conversation, with no URL, there is no credits line. **The URL must be clean: always remove tracking parameters**, whatever the length: `utm_*`, `si`, `feature`, `fbclid`, `gclid`, `igshid`, `ref`, `ref_src`, `mc_cid`, `mc_eid`, and similar share/campaign tags, plus a `#fragment` that only marks a position or time. Keep every parameter that identifies the content (`v=` on YouTube, `p=` or `id=` on pages that use them), the scheme and the host. Examples: `https://www.youtube.com/watch?v=Pd85QmPTPRI&si=abc123` → `https://www.youtube.com/watch?v=Pd85QmPTPRI`; `https://youtu.be/Pd85QmPTPRI?si=abc123` → `https://youtu.be/Pd85QmPTPRI`; `https://site.ro/reteta/?utm_source=fb` → `https://site.ro/reteta/`. Never cut or abbreviate the URL itself. If you removed anything, say so in the closing note. The 240-character limit counts the whole field, including the credits line and the blank line (2 newline characters): description text budget = 240 − 2 − 9 (`Credits: `) − clean URL length. Write the descriptive sentence to fit that budget (reword, do not chop). If the budget is still below about 40 characters, keep one very short sentence rather than shortening the URL.
 - **Difficulty:** one of `ușor`, `mediu`, `dificil`. **Categories:** one or more of the 20 listed values, spelled exactly.
 - **Portion size:** how many portions the recipe yields, as a number plus the *plural* unit from the allowed 14 (`4 porții`, `10 felii`, `6 bucăți`; singular only for 1). Nutrition is then per single portion (one `porție`, one `felie`). Keep both consistent: if the dish makes 4 servings, write `4 porții` and divide the nutrition totals by 4. Never write `1 porție` for a dish that feeds several people.
 - **Times:** `Pregătire` = hands-on preparation, `Gata în` = total time; `Gata în` ≥ `Pregătire`, and neither may be 0. A single time in the source is usually the total, and sources are often optimistic: add up the steps (device programs, baking, resting, cooling) and when the sum is larger than the source's time, use the sum and say so in the closing note.
@@ -74,6 +75,8 @@ Return the result in chat as a single Markdown block, no file written except the
 ## Detalii despre rețetă
 - **Numele rețetei:** …
 - **Scurtă descriere:** …
+
+  Credits: <URL folosit pentru rețetă>   — only when the source was a URL; as a second paragraph of this bullet (blank line before it), it becomes the last line of the field
 - **Dificultate:** ușor | mediu | dificil
 - **Dimensiunea porției:** <număr> <unitate>
 - **Valoare calorică:** <n> kcal
@@ -116,4 +119,4 @@ Return the result in chat as a single Markdown block, no file written except the
 
 Other programs list the fields their schema entry names (e.g. Prăjire: temperatură, timp; Sous-vide: temperatură, durată; Turbo: activare în sec + instrucțiuni).
 
-After the block, add a short note in Romanian, outside it: that the nutrition values are estimates (and how the portion was defined), anything scaled or assumed, and that the next step is `/mcs:upload` (when it exists), or that the block can be copied into the form by hand. Before returning, check every limit once against the schema, since the form will not forgive a title over 80 characters.
+After the block, add a short note in Romanian, outside it: that the nutrition values are estimates (and how the portion was defined), anything scaled or assumed, and that the next step is `/mcs:upload` (when it exists), or that the block can be copied into the form by hand. Before returning, check every limit once against the schema, since the form will not forgive a title over 80 characters. For the short description, count the credits line too (total ≤ 240); if you removed tracking parameters from the URL, mention it in the note (the credits URL is always the clean one).

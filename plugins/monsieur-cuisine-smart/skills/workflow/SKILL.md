@@ -19,9 +19,9 @@ source  ──►  1. extract  ──►  2. convert  ──►  3. upload  ─�
 |---|---|---|---|---|
 | 1 | `extract` | ready | Recipe source: web URL, pasted text, screenshot/PDF, local Markdown/text file, or YouTube link (transcript is extracted first) | A clean Romanian Markdown recipe (title, servings, difficulty, times, calories, ingredients, steps, serving), returned in chat for copy/paste |
 | 2 | `convert` | ready | The Markdown from `extract` (pasted in chat or in the conversation) | Copy/paste-ready Markdown with every field of the monsieur-cuisine.com form: details, estimated nutrition, times, ingredients, device steps with programs, image (file saved next to the user's working directory) |
-| 3 | `upload` | planned | MCS-compatible recipe | The recipe saved in the user's Monsieur Cuisine account via browser automation, so it syncs to the device |
+| 3 | `upload` | ready | The Markdown block from `convert` | The form on monsieur-cuisine.com filled in the browser pane, saved as a project and, only on the user's explicit request, finalized as a private recipe. Login, the image file picker and the AI-image declaration are handed to the user |
 
-"Planned" means the skill has not been written yet. Skills are added one at a time, and the README is updated each time (see Maintenance).
+"Planned" means a skill has not been written yet. Skills are added one at a time, and the README is updated each time (see Maintenance).
 
 ## How to run
 
