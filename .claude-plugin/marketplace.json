@@ -33,6 +33,10 @@
       "source": "./plugins/prompt"
     },
     {
+      "name": "mcs",
+      "source": "./plugins/monsieur-cuisine-smart"
+    },
+    {
       "name": "coursiv",
       "source": "./plugins/coursiv"
     }
