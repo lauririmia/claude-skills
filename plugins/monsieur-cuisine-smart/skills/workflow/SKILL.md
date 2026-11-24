@@ -17,8 +17,8 @@ source  ──►  1. extract  ──►  2. convert  ──►  3. upload  ─�
 
 | # | Skill | Status | Input | Output |
 |---|---|---|---|---|
-| 1 | `extract` | planned | Recipe source: web URL, pasted text, screenshot/PDF, local Markdown/text file, or YouTube link (transcript is extracted first) | A normalized recipe: title, servings, times, ingredients with quantities, ordered steps |
-| 2 | `convert` | planned | Normalized recipe | A recipe in the format the Monsieur Cuisine Smart accepts (steps mapped to device settings: time, temperature, speed, accessories) |
+| 1 | `extract` | ready | Recipe source: web URL, pasted text, screenshot/PDF, local Markdown/text file, or YouTube link (transcript is extracted first) | A clean Romanian Markdown recipe (title, servings, difficulty, times, calories, ingredients, steps, serving), returned in chat for copy/paste |
+| 2 | `convert` | planned | Normalized recipe (the Markdown from `extract`) | A recipe in the format the Monsieur Cuisine Smart accepts (steps mapped to device settings: time, temperature, speed, accessories) |
 | 3 | `upload` | planned | MCS-compatible recipe | The recipe saved in the user's Monsieur Cuisine account via browser automation, so it syncs to the device |
 
 "Planned" means the skill has not been written yet. Skills are added one at a time, and the README is updated each time (see Maintenance).

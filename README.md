@@ -27,7 +27,7 @@ A group of related skills becomes a plugin in `plugins/` with its own namespace 
 |---|---|---|
 | `coursiv` | [plugins/coursiv/](plugins/coursiv/) | `question`, `prompt`, `columns`, `workflow`, `lesson`, `cleanup` — processing Coursiv.io lessons |
 | `dbg` | [plugins/debug/](plugins/debug/) | `diagnose`, `critique`, `handoff`, `improve-codebase-architecture`, `rea` |
-| `mcs` | [plugins/monsieur-cuisine-smart/](plugins/monsieur-cuisine-smart/) | `workflow` (more planned: `extract`, `convert`, `upload`) — recipes for Monsieur Cuisine Smart |
+| `mcs` | [plugins/monsieur-cuisine-smart/](plugins/monsieur-cuisine-smart/) | `workflow`, `extract` (planned: `convert`, `upload`) — recipes for Monsieur Cuisine Smart |
 | `pmpt` | [plugins/prompt/](plugins/prompt/) | `gcao`, `universal`, `short` — prompt engineering transforms |
 | `ppc` | [plugins/paperclip/](plugins/paperclip/) | `define`, `deploy`, `pull`, `push`, `update`, `hire-config` — Paperclip agent lifecycle |
 | `sdd` | [plugins/spec-driven-development/](plugins/spec-driven-development/) | Spec-driven development workflow |
