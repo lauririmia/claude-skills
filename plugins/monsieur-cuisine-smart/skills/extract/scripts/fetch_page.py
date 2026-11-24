@@ -50,17 +50,47 @@ class Text(HTMLParser):
             self.parts.append(data.strip())
 
 
+def slug_words(url):
+    path = urllib.parse.urlparse(url).path.rsplit("/", 1)[-1]
+    path = re.sub(r"\.\w+$", "", path)
+    return {w for w in re.findall(r"[a-zăâîșț]{4,}", path.lower())}
+
+
+def matches_url(url, title):
+    """Cheap sanity check: some words of the URL slug should appear in the page title."""
+    words = slug_words(url)
+    if len(words) < 2:
+        return True
+    plain = re.sub(r"[^a-zăâîșț ]", "", title.lower())
+    plain = plain.translate(str.maketrans("ăâîșț", "aaist"))
+    hits = sum(1 for w in words if w.translate(str.maketrans("ăâîșț", "aaist")) in plain)
+    return hits / len(words) >= 0.25
+
+
+def fetch(url):
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "en,ro;q=0.8"})
+    return urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "ignore")
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
     url = sys.argv[1]
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "en,ro;q=0.8"})
-        html = urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "ignore")
-    except Exception as e:  # noqa: BLE001
-        print(f"[mcs] fetch failed: {e}", file=sys.stderr)
-        sys.exit(2)
+    html = None
+    for attempt in range(3):
+        try:
+            html = fetch(url)
+        except Exception as e:  # noqa: BLE001
+            print(f"[mcs] fetch failed: {e}", file=sys.stderr)
+            sys.exit(2)
+        m = re.search(r"<title[^>]*>(.*?)</title>", html, re.S | re.I)
+        if matches_url(url, m.group(1) if m else ""):
+            break
+        print(f"[mcs] page title does not match the URL (attempt {attempt + 1}); retrying", file=sys.stderr)
+    else:
+        print("[mcs] WARNING: the server keeps returning a page whose title does not match "
+              "the URL. The content below may belong to a different recipe: check it.", file=sys.stderr)
     recipes = []
     for m in re.finditer(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', html, re.S | re.I):
         try:
