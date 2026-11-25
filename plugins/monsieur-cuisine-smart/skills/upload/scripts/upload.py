@@ -221,7 +221,7 @@ def fill_details(page, r, desc, ai_declared):
     for i, k in enumerate(["kcal", "protein_g", "carbs_g", "fat_g"], start=1):
         if k in n:
             nums.nth(i).fill(str(n[k]))
-    cat = page.locator(".v-select", has=page.get_by_placeholder("Selectați o categorie"))
+    cat = page.locator(".v-select--is-multi").first
     for c in d["categories"]:
         click_center(cat)
         click_option(page, c)
