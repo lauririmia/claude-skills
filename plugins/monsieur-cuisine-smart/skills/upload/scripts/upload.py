@@ -5,7 +5,11 @@
 # ///
 """mcs upload: fills the monsieur-cuisine.com "Creare reteta" form (MC smart) from <slug>-mcs.json.
 
-Run:  uv run upload.py RECIPE.json [--manual-terms] [--save [--finalize-private]] [--recipe-id N --finalize-private] [--no-ai-declaration] [--reject-cookies] [--email ADDRESS] [--fresh-session] [--inspect]
+Run:  uv run upload.py RECIPE.json [--manual-terms] [--save [--finalize-private]] [--recipe-id N --finalize-private] [--no-ai-declaration] [--reject-cookies] [--email ADDRESS] [--fresh-session] [--inspect] [--review]
+
+--review: after filling, keep the SAME Chrome window open and wait (up to 30 min) for the word "save",
+"save-private" or "cancel" in the decision file (default /tmp/mcs-decision), then continue in that window:
+one pass over the form instead of a dry run followed by a second fill. Run it in the background.
 
 Without --save the form is only filled (nothing is stored). --save clicks "Salvare proiect" and prints the
 recipe-id; --finalize-private then does "Completare rețetă -> Salvare ca privat" (never publishes).
@@ -440,6 +444,8 @@ def main():
     ap.add_argument("--email", help="fill this e-mail in the login form (or set MCS_EMAIL); the password is never filled")
     ap.add_argument("--fresh-session", action="store_true", help="clear the saved Chrome session first, so this run starts logged out (default: the session is kept)")
     ap.add_argument("--screenshot", default="/tmp/mcs-form.png")
+    ap.add_argument("--review", action="store_true", help="after filling, wait in the same window for the decision file (save | save-private | cancel)")
+    ap.add_argument("--decision-file", default="/tmp/mcs-decision")
     ap.add_argument("--inspect", action="store_true", help="only dump the form controls of each step")
     a = ap.parse_args()
 
@@ -484,6 +490,23 @@ def main():
         fill_steps(page, recipe)
         page.screenshot(path=a.screenshot, full_page=True)
         log("Formular completat (nesalvat). Captura:", a.screenshot)
+        if a.review and not a.save:
+            dec = Path(a.decision_file)
+            dec.unlink(missing_ok=True)
+            log("ASTEPT decizia in", dec, "(save | save-private | cancel), fereastra ramane deschisa.")
+            word = ""
+            for _ in range(1800):
+                if dec.exists():
+                    word = dec.read_text().strip().lower()
+                    if word in ("save", "save-private", "cancel"):
+                        break
+                page.wait_for_timeout(1000)
+            dec.unlink(missing_ok=True)
+            if word == "cancel" or not word:
+                log("Nu s-a salvat nimic (" + (word or "timeout") + ").")
+                ctx.close(); return
+            a.save = True
+            a.finalize_private = (word == "save-private")
         if a.save:
             rid = save_project(page)
             log("Proiect salvat. recipe-id =", rid)

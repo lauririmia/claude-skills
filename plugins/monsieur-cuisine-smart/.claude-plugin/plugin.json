@@ -1,6 +1,6 @@
 {
   "name": "mcs",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Monsieur Cuisine Smart: convert an existing recipe into a format compatible with the Monsieur Cuisine Smart multi cooker and upload it to the device via the Monsieur Cuisine account.",
   "author": {
     "name": "Laurentiu Irimia"
