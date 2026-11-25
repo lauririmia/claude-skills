@@ -1,0 +1,121 @@
+{
+  "$schema": "./recipe.schema.json",
+  "schema_version": 1,
+  "device": "mc-smart",
+  "meta": { "slug": "papanasi-prajiti", "generated_by": "mcs:convert" },
+  "source": { "type": "video", "url": "https://www.youtube.com/watch?v=Pd85QmPTPRI" },
+
+  "notes": [
+    "Valorile nutriționale sunt estimări pe o porție (1 papanaș + 1 biluță, din 6), cu date USDA; includ 30 g făină pentru modelat și ~70 g ulei absorbit (estimat).",
+    "Prăjirea e lăsată la aragaz: programul Prăjire al aparatului merge la max. 130 °C și 500 g.",
+    "Dificultatea, timpul de pregătire (35 min) și timpul total (1 h 15 min) sunt estimate; sursa nu le dă.",
+    "Sarea, uleiul și făina pentru modelat sunt «după gust»: sursa nu dă cantități."
+  ],
+
+  "details": {
+    "name": "Papanași prăjiți cu brânză dulce de vaci",
+    "short_description": "Papanași pufoși din brânză dulce de vaci, prăjiți aurii și serviți cu smântână și dulceață. Aluatul se face în Monsieur Cuisine, iar prăjirea se face la aragaz.",
+    "credits_url": "https://www.youtube.com/watch?v=Pd85QmPTPRI",
+    "difficulty": "mediu",
+    "portion": { "amount": 6, "unit": "porții" },
+    "nutrition_per_portion": { "kcal": 561, "protein_g": 18, "carbs_g": 67, "fat_g": 24 },
+    "categories": ["Deserturi"],
+    "image": {
+      "path": "/Users/lairimia/papanasi-prajiti-mcs.jpg",
+      "width": 1560,
+      "height": 945,
+      "ai_generated": true
+    }
+  },
+
+  "time": { "prep_minutes": 35, "total_minutes": 75 },
+
+  "ingredient_groups": [
+    {
+      "name": "Ingrediente generale",
+      "items": [
+        { "name": "brânză dulce de vaci", "quantity": "500", "unit": "g" },
+        { "name": "făină", "quantity": "300", "unit": "g" },
+        { "name": "ou", "quantity": "2", "unit": "bucată" },
+        { "name": "bicarbonat de sodiu", "quantity": "1", "unit": "linguriță" },
+        { "name": "esență de portocale", "quantity": "1", "unit": "linguriță" },
+        { "name": "zahăr vanilat", "quantity": "30", "unit": "g" },
+        { "name": "lămâie (doar coaja)", "quantity": "1", "unit": "bucată" },
+        { "name": "sare", "quantity": "după gust", "unit": null },
+        { "name": "făină pentru modelat", "quantity": "după gust", "unit": null },
+        { "name": "ulei pentru prăjit", "quantity": "după gust", "unit": null }
+      ]
+    },
+    {
+      "name": "Pentru decor",
+      "items": [
+        { "name": "smântână", "quantity": "200", "unit": "g" },
+        { "name": "dulceață", "quantity": "150", "unit": "g" }
+      ]
+    }
+  ],
+
+  "steps": [
+    {
+      "type": "text",
+      "title": "Pregătirea vasului",
+      "instructions": "Montează cuțitul în vasul de mixare. Brânza de vaci trebuie să fie foarte bine scursă de zer, altfel vei folosi mai multă făină, iar papanașii vor ieși mai duri."
+    },
+    {
+      "type": "scale",
+      "title": "Adăugare brânză de vaci",
+      "grams": 500,
+      "instructions": "Adaugă în vas brânza dulce de vaci grasă, foarte bine scursă."
+    },
+    {
+      "type": "text",
+      "title": "Adăugare ouă și arome",
+      "instructions": "Sparge 2 ouă în vas. Adaugă coaja rasă de la o lămâie, 1 linguriță de esență de portocale, 1 linguriță rasă de bicarbonat de sodiu și un praf de sare."
+    },
+    {
+      "type": "scale",
+      "title": "Adăugare zahăr vanilat",
+      "grams": 30,
+      "instructions": "Adaugă zahărul vanilat în vas."
+    },
+    {
+      "type": "manual",
+      "title": "Amestecare compoziție",
+      "temperature_c": 0,
+      "duration_sec": 30,
+      "speed": 3,
+      "rotation": "ccw"
+    },
+    {
+      "type": "scale",
+      "title": "Adăugare făină",
+      "grams": 300,
+      "instructions": "Adaugă făina în vas."
+    },
+    {
+      "type": "dough_soft",
+      "title": "Frământare aluat",
+      "duration_sec": 120
+    },
+    {
+      "type": "text",
+      "title": "Odihna aluatului",
+      "instructions": "Scoate aluatul cu spatula într-un bol. Este ușor lipicios, ceea ce este normal. Lasă-l să se odihnească 10 minute."
+    },
+    {
+      "type": "text",
+      "title": "Modelarea papanașilor",
+      "instructions": "Cu mâinile înfăinate, cântărește bucăți de 120 g (papanaș) și 40 g (biluță): 6 + 6. Rotunjește papanașul, fă o gaură în mijloc cu degetul și lărgește-o până obții un inel uniform."
+    },
+    {
+      "type": "text",
+      "title": "Prăjirea la aragaz",
+      "instructions": "Încinge uleiul într-o cratiță pe aragaz. Prăjește la foc mediu papanașul cu biluța lui, 2–3 minute pe fiecare parte, până se rumenesc. Scoate pe hârtie absorbantă și repetă cu restul."
+    },
+    {
+      "type": "text",
+      "title": "Decorare și servire",
+      "instructions": "Dă biluța deoparte, pune smântână pe papanaș și dulceață din loc în loc. Pune biluța la loc, adaugă deasupra puțină dulceață și smântână. Servește imediat."
+    }
+  ]
+}

@@ -14,6 +14,7 @@ All in `references/` next to this file.
 - `schema_formular_monsieur_cuisine_v5.md` — the form: every field, limit, allowed value, program and its ranges. **Read it fully before mapping.** It is the contract for the output.
 - `Monsieur_Cuisine_SKMS1200C1_capabilities_EN.md` — what the device can do (bowl capacity, programs, speeds, temperatures). Read the sections you need through its section map, always when a quantity looks large or a technique is unusual.
 - `Sfaturi_pentru_preparare_RO.md` — guide values (kneading, pureeing, chopping, steaming, sous-vide, slow cook, fermenting, smoothie). Use them to pick times/speeds and to size quantities.
+- `recipe.schema.json` — JSON Schema of the machine-readable output (`<slug>-mcs.json`), and `example-papanasi-prajiti-mcs.json`, a complete valid example. Read the example before writing the JSON in step 6.
 
 ## Flow
 
@@ -67,7 +68,10 @@ The form needs a JPEG/PNG of at least 1560 × 945 px with a centred subject.
 4. **ChatGPT prompt block.** This is part of the conversation with the user, before the final output: show the prompt, wait for the image, and only then return the output block (with `LIPSĂ` if the user postponed it). The closing note still comes after the output block.  Give it as a single Markdown code block so it copies cleanly, written in English because image generators follow English best, and built from this recipe, not from a template: the dish name, the visible main ingredients and colours, how it is served (bowl, plate, tray, sliced loaf) and a garnish that really belongs to it. Always include these constraints, with the reason in mind: the format and size written into the prompt itself, as its first sentence, so the user only pastes and runs it and never has to choose settings (for example: `Generate a landscape image, 1536 x 1024 pixels (3:2), not square.`), because the form needs at least 1560 x 945 px and crops to about 1.65:1, trimming some top and bottom; the dish centred with generous margin around it, so the crop cannot cut it; photorealistic food photography, natural soft daylight, shallow depth of field, clean neutral background; no text, logos, watermarks, hands or people, because the image will be published under the user's name. Never leave any step to the user besides pasting the prompt and saving the result: the prompt must be self-contained. After the block, tell the user to save the generated image and give you its path; then run `prepare_image.py` on that local file (it accepts a path), look at the result as in step 2, and report the final path. An image straight from ChatGPT is typically 1536 × 1024, which the script enlarges by about 1.6 % to reach 1560 × 945, which is invisible.
 
 ### 6. Output
-Return the result in chat as a single Markdown block, no file written except the image. Use this structure so it can be copied as-is and parsed by the upload step:
+Produce two things from the same data: the Markdown block below, in chat, for the user to read and copy, and the JSON file `<slug>-mcs.json` (step 6b), which the upload step reads. They must say the same thing; the Markdown is never parsed by a script.
+
+#### Markdown block
+Return the result in chat as a single Markdown block. Use this structure so it can be copied as-is:
 
 ```markdown
 # <Nume rețetă>
@@ -119,4 +123,35 @@ Return the result in chat as a single Markdown block, no file written except the
 
 Other programs list the fields their schema entry names (e.g. Prăjire: temperatură, timp; Sous-vide: temperatură, durată; Turbo: activare în sec + instrucțiuni).
 
-After the block, add a short note in Romanian, outside it: that the nutrition values are estimates (and how the portion was defined), anything scaled or assumed, and that the next step is `/mcs:upload` (when it exists), or that the block can be copied into the form by hand. Before returning, check every limit once against the schema, since the form will not forgive a title over 80 characters. For the short description, count the credits line too (total ≤ 240); if you removed tracking parameters from the URL, mention it in the note (the credits URL is always the clean one).
+#### 6b. JSON file
+Write `<slug>-mcs.json` next to the image (same folder as `<slug>-mcs.jpg`, the user's working directory) with the Write tool, following `references/recipe.schema.json`. Rules that differ from the Markdown:
+
+- `details.short_description` is the sentence **without** the `Credits:` line; the clean URL goes in `details.credits_url` (`null` when the source is not a URL). The upload script composes `text + "\n\nCredits: " + url`.
+- Step `type` is an ASCII identifier: `text`, `scale`, `manual`, `dough_firm`, `dough_soft`, `dough_liquid`, `steam`, `fry`, `sous_vide`, `slow_cook`, `egg_boil`, `prewash`, `ferment`, `turbo`, `rice`, `food_processor`, `puree`, `smoothie`. Durations are always `duration_sec` (Turbo: `seconds`), temperatures `temperature_c`, rotation `cw` / `ccw` (not the Romanian button text).
+- `time` is in minutes; `image` is `null` when the image is `LIPSĂ`; `image.ai_generated` is `true` when the image came from a generator.
+- `notes` holds the assumptions and estimates from the closing note (one short string each); they are not sent to the form.
+- Ingredient `quantity` is always a string; `unit` is `null` when empty.
+
+Then validate it, and fix the file (not the schema) until it passes:
+
+```bash
+uv run --quiet --with jsonschema python3 - <<'PY'
+import json, os
+from jsonschema import Draft202012Validator as V
+d = "<this skill's directory>/references"
+f = "<slug>-mcs.json"
+r = json.load(open(f)); errs = [e.message for e in V(json.load(open(d + "/recipe.schema.json"))).iter_errors(r)]
+desc = r["details"].get("short_description", ""); u = r["details"].get("credits_url")
+if u: desc += "\n\nCredits: " + u
+if len(desc) > 240: errs.append(f"descriere compusă {len(desc)} > 240")
+if r["time"]["total_minutes"] < r["time"]["prep_minutes"]: errs.append("Gata în < Pregătire")
+im = r["details"]["image"]
+if im and not os.path.exists(im["path"]): errs.append("imaginea nu există pe disc")
+print(errs or "OK")
+PY
+```
+
+Report the file path in the closing note.
+
+#### Closing note
+After the block, add a short note in Romanian, outside it: that the nutrition values are estimates (and how the portion was defined), anything scaled or assumed, the path of the JSON file, and that the next step is `/mcs:upload`, or that the block can be copied into the form by hand. Before returning, check every limit once against the schema, since the form will not forgive a title over 80 characters. For the short description, count the credits line too (total ≤ 240); if you removed tracking parameters from the URL, mention it in the note (the credits URL is always the clean one).

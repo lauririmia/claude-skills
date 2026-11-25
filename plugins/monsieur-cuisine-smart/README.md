@@ -21,7 +21,7 @@ Upload is done through browser automation against the Monsieur Cuisine account (
 | `workflow` | `/mcs:workflow` | ready | Orchestrator: defines the order of the skills below and which ones exist yet |
 | `extract` | `/mcs:extract` | ready | Turn a source into a clean, print-ready Romanian Markdown recipe |
 | `convert` | `/mcs:convert` | ready | Convert the extracted recipe into the Monsieur Cuisine Smart form fields |
-| `upload` | `/mcs:upload` | ready | Fill the Monsieur Cuisine form in the browser from the convert output and save it |
+| `upload` | `/mcs:upload` | ready | Run a Playwright script that fills the Monsieur Cuisine form from `<slug>-mcs.json` and saves it |
 
 ### `extract` — `/mcs:extract`
 
@@ -44,7 +44,7 @@ Converts the recipe from `/mcs:extract` into the exact content of the monsieur-c
 - **Input:** the extract output, pasted in chat or already in the conversation.
 - **Flow:** (1) asks the user, one question at a time with a recommended option, about anything ambiguous (over-capacity quantities, unclear portions, missing data); (2) maps the recipe to the form: units limited to the form's list (liquids converted to grams), ingredient additions as Cântar steps, cooking as device programs within their ranges; (3) estimates nutrition per portion from web research; (4) finds the recipe image on the source page and crops it to 1560×945 px, or asks the user for one — if none fits, it offers a ready-to-paste ChatGPT image prompt for the dish (it never stretches a small image).
 - **Credits:** when the source was a website or video URL, the short description ends with a blank line and `Credits: <URL>`, always with a clean URL (tracking parameters such as `utm_*`, `si`, `feature`, `fbclid` removed); the 240-character limit counts that line too.
-- **Output:** one Markdown block in chat (nothing written to disk except the image `<slug>-mcs.jpg`), ready for copy/paste and for the future `upload` skill.
+- **Output:** one Markdown block in chat for copy/paste, plus two files next to each other: the image `<slug>-mcs.jpg` and `<slug>-mcs.json`, the machine-readable version of the same recipe (ASCII step types, `notes`), validated against [recipe.schema.json](skills/convert/references/recipe.schema.json) before it is reported. The JSON is the contract for a future script-based `upload`.
 - **References** (bundled in [skills/convert/references/](skills/convert/references/)): form schema, device capabilities (from the manual) and preparation tips.
 - **Image script:** [skills/convert/scripts/prepare_image.py](skills/convert/scripts/prepare_image.py) (uses Pillow, installed temporarily through `uv` if missing).
 
@@ -52,12 +52,12 @@ See [skills/convert/SKILL.md](skills/convert/SKILL.md).
 
 ### `upload` — `/mcs:upload`
 
-Fills the "Creare rețetă" form on monsieur-cuisine.com (MC smart) from the `/mcs:convert` block, using the browser pane.
+Uploads the recipe to the user's Monsieur Cuisine account by running [skills/upload/scripts/upload.py](skills/upload/scripts/upload.py) (Playwright, system Chrome) on the `<slug>-mcs.json` from `convert`.
 
-- **Handed to the user:** login (it never types passwords), choosing the device if asked, the image file picker, and the "created with AI" declaration.
-- **Asks first:** ticking the terms of use, saving as project, and finalizing.
-- **Flow:** details → time → ingredients (groups, units) → steps (text, Cântar, Gătire manuală, Aluat moale and the other programs) → "Salvare proiect" (gives a `recipe-id`). "Completare rețetă → Salvare ca privat" only on the user's explicit request; it never publishes.
-- **Quirks** (late-appearing controls, what `form_input` cannot set, sliders by keyboard) are listed in the skill.
+- **Needs:** `uv` and Google Chrome. Dependencies (`playwright`, `jsonschema`) are installed by `uv` on the fly; the Chrome profile with the login lives in `~/.cache/mcs/chrome-profile`.
+- **Handed to the user:** login and the device choice, in the Chrome window (the script never types passwords). The terms box is ticked only with `--accept-terms`.
+- **Options:** no flag = fill only, nothing stored; `--save` = "Salvare proiect" (prints the `recipe-id`, then checks the image); `--finalize-private` = "Salvare ca privat" (never publishes; with `--recipe-id <id>` it finalizes an already saved project without refilling); `--no-ai-declaration` leaves the "image created with AI" box unticked (it is ticked by default); `--inspect` lists the form controls when the site changes.
+- **Skill role:** asks for the confirmations (terms, save, finalize), runs the script, reads the screenshot, reports. The old browser-pane flow is kept as [skills/upload/references/manual_flow.md](skills/upload/references/manual_flow.md), for when the script cannot run.
 
 See [skills/upload/SKILL.md](skills/upload/SKILL.md).
 

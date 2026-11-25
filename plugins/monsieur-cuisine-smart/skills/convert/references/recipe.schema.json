@@ -1,0 +1,345 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lauririmia/claude-skills/mcs/recipe.schema.json",
+  "title": "Rețetă Monsieur Cuisine Smart (contract convert → upload)",
+  "description": "Conținutul formularului „Creare rețetă” (MC smart). Produs de /mcs:convert ca <slug>-mcs.json, consumat de scriptul de upload. Limitele vin din schema_formular_monsieur_cuisine_v5.md. Limita de 240 de caractere a descrierii se verifică după compunerea cu linia Credits (vezi details.credits_url): schema nu poate calcula asta.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "device", "details", "time", "ingredient_groups", "steps"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schema_version": { "const": 1 },
+    "device": { "const": "mc-smart" },
+
+    "meta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "generated_by": { "type": "string" }
+      }
+    },
+
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["web", "video", "text", "file", "image"] },
+        "url": { "type": ["string", "null"], "format": "uri" }
+      }
+    },
+
+    "notes": {
+      "description": "Presupuneri și estimări (nutriție, timpi, adaptări). Scriptul le afișează la final; nu ajung în formular.",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "difficulty", "portion", "categories", "image"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 86 },
+        "short_description": {
+          "description": "Fără linia Credits. Scriptul compune: text + \"\\n\\nCredits: \" + credits_url și verifică ≤ 240.",
+          "type": "string",
+          "maxLength": 240
+        },
+        "credits_url": {
+          "description": "URL curat (fără utm_*, si, feature, fbclid etc.) sau null când sursa nu e un URL.",
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "difficulty": { "enum": ["ușor", "mediu", "dificil"] },
+        "portion": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amount", "unit"],
+          "properties": {
+            "amount": { "type": "integer", "minimum": 1 },
+            "unit": {
+              "enum": ["porție", "porții", "pahar", "pahare", "borcan", "borcane", "unitate", "unități", "bucată", "bucăți", "felie", "felii", "sticlă", "sticle"]
+            }
+          }
+        },
+        "nutrition_per_portion": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kcal": { "type": "integer", "minimum": 0, "maximum": 99999 },
+            "protein_g": { "type": "integer", "minimum": 0, "maximum": 99999 },
+            "carbs_g": { "type": "integer", "minimum": 0, "maximum": 99999 },
+            "fat_g": { "type": "integer", "minimum": 0, "maximum": 99999 }
+          }
+        },
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["Food Processor", "Storcător cu aburi", "Vegan", "Vegetarian", "Sosur", "Supe și tocănițe", "Salate", "Garnituri", "Snack-uri", "Feluri principale", "Hrană pentru bebeluși", "Băuturi", "One-Pot / All-in-One", "Deserturi", "Coacere", "Mic dejun", "Cină", "EASY+PURE", "Aperitive", "Marmeladă și jeleu"]
+          }
+        },
+        "image": {
+          "description": "null = imagine lipsă; scriptul refuză să pornească până nu există.",
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["path", "width", "height", "ai_generated"],
+          "properties": {
+            "path": { "type": "string", "pattern": "^/.*\\.(jpg|jpeg|png)$" },
+            "width": { "type": "integer", "minimum": 1560 },
+            "height": { "type": "integer", "minimum": 945 },
+            "ai_generated": { "type": "boolean" }
+          }
+        }
+      }
+    },
+
+    "time": {
+      "description": "Minute. „Gata în” ≥ „Pregătire” ≥ 1.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prep_minutes", "total_minutes"],
+      "properties": {
+        "prep_minutes": { "type": "integer", "minimum": 1, "maximum": 5999 },
+        "total_minutes": { "type": "integer", "minimum": 1, "maximum": 18059 }
+      }
+    },
+
+    "ingredient_groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "items"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "items": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "quantity", "unit"],
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "quantity": { "type": "string", "minLength": 1 },
+                "unit": {
+                  "enum": [null, "g", "linguriță", "lingurițe", "lingură", "linguri", "priză", "prize", "vârf de cuțit", "vârfuri de cuțit", "bucată", "strat", "straturi"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+
+  "$defs": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "instructions": { "type": "string", "minLength": 1, "maxLength": 240 },
+
+    "temp_manual": {
+      "description": "Gătire manuală / Prăjire: 21 de poziții.",
+      "enum": [0, 37, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130]
+    },
+
+    "step": {
+      "oneOf": [
+        { "$ref": "#/$defs/step_text" },
+        { "$ref": "#/$defs/step_scale" },
+        { "$ref": "#/$defs/step_manual" },
+        { "$ref": "#/$defs/step_dough" },
+        { "$ref": "#/$defs/step_steam" },
+        { "$ref": "#/$defs/step_fry" },
+        { "$ref": "#/$defs/step_sous_vide" },
+        { "$ref": "#/$defs/step_slow_cook" },
+        { "$ref": "#/$defs/step_egg_boil" },
+        { "$ref": "#/$defs/step_prewash" },
+        { "$ref": "#/$defs/step_ferment" },
+        { "$ref": "#/$defs/step_turbo" },
+        { "$ref": "#/$defs/step_timed_simple" }
+      ]
+    },
+
+    "step_text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "instructions"],
+      "properties": {
+        "type": { "const": "text" },
+        "title": { "$ref": "#/$defs/title" },
+        "instructions": { "$ref": "#/$defs/instructions" }
+      }
+    },
+
+    "step_scale": {
+      "description": "Cântar: Greutate 5–5000 g + Instrucțiuni.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "grams", "instructions"],
+      "properties": {
+        "type": { "const": "scale" },
+        "title": { "$ref": "#/$defs/title" },
+        "grams": { "type": "integer", "minimum": 5, "maximum": 5000 },
+        "instructions": { "$ref": "#/$defs/instructions" }
+      }
+    },
+
+    "step_manual": {
+      "description": "Gătire manuală. Viteza 4–10 doar la 0 °C și rotație cw; altfel 0–3.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "temperature_c", "duration_sec", "speed", "rotation"],
+      "properties": {
+        "type": { "const": "manual" },
+        "title": { "$ref": "#/$defs/title" },
+        "temperature_c": { "$ref": "#/$defs/temp_manual" },
+        "duration_sec": { "type": "integer", "minimum": 1, "maximum": 5940 },
+        "speed": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "rotation": { "enum": ["cw", "ccw"] }
+      },
+      "if": {
+        "anyOf": [
+          { "properties": { "temperature_c": { "exclusiveMinimum": 0 } } },
+          { "properties": { "rotation": { "const": "ccw" } } }
+        ]
+      },
+      "then": { "properties": { "speed": { "maximum": 3 } } }
+    },
+
+    "step_dough": {
+      "description": "Aluat ferm / moale: 45 s – 4 min; lichid: 45 s – 6 min.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "duration_sec"],
+      "properties": {
+        "type": { "enum": ["dough_firm", "dough_soft", "dough_liquid"] },
+        "title": { "$ref": "#/$defs/title" },
+        "duration_sec": { "type": "integer", "minimum": 45, "maximum": 360 }
+      },
+      "if": { "properties": { "type": { "enum": ["dough_firm", "dough_soft"] } } },
+      "then": { "properties": { "duration_sec": { "maximum": 240 } } }
+    },
+
+    "step_steam": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "duration_sec"],
+      "properties": {
+        "type": { "const": "steam" },
+        "title": { "$ref": "#/$defs/title" },
+        "duration_sec": { "type": "integer", "minimum": 0, "maximum": 3600 }
+      }
+    },
+
+    "step_fry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "temperature_c", "duration_sec"],
+      "properties": {
+        "type": { "const": "fry" },
+        "title": { "$ref": "#/$defs/title" },
+        "temperature_c": { "$ref": "#/$defs/temp_manual" },
+        "duration_sec": { "type": "integer", "minimum": 0, "maximum": 840 }
+      }
+    },
+
+    "step_sous_vide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "temperature_c", "duration_sec"],
+      "properties": {
+        "type": { "const": "sous_vide" },
+        "title": { "$ref": "#/$defs/title" },
+        "temperature_c": { "type": "integer", "minimum": 40, "maximum": 85 },
+        "duration_sec": { "type": "integer", "minimum": 900, "maximum": 43200 }
+      }
+    },
+
+    "step_slow_cook": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "temperature_c", "duration_sec"],
+      "properties": {
+        "type": { "const": "slow_cook" },
+        "title": { "$ref": "#/$defs/title" },
+        "temperature_c": { "enum": [37, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95] },
+        "duration_sec": { "type": "integer", "minimum": 900, "maximum": 28800 }
+      }
+    },
+
+    "step_egg_boil": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "egg_size", "doneness"],
+      "properties": {
+        "type": { "const": "egg_boil" },
+        "title": { "$ref": "#/$defs/title" },
+        "egg_size": { "enum": ["small", "medium", "large"] },
+        "doneness": { "enum": ["soft", "semi_soft", "hard"] }
+      }
+    },
+
+    "step_prewash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "length"],
+      "properties": {
+        "type": { "const": "prewash" },
+        "title": { "$ref": "#/$defs/title" },
+        "length": { "enum": ["short", "long"] }
+      }
+    },
+
+    "step_ferment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "temperature_c", "duration_sec"],
+      "properties": {
+        "type": { "const": "ferment" },
+        "title": { "$ref": "#/$defs/title" },
+        "temperature_c": { "enum": [37, 40, 45, 50, 55, 60, 65] },
+        "duration_sec": { "type": "integer", "minimum": 1800, "maximum": 43200 }
+      }
+    },
+
+    "step_turbo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "seconds", "instructions"],
+      "properties": {
+        "type": { "const": "turbo" },
+        "title": { "$ref": "#/$defs/title" },
+        "seconds": { "type": "integer", "minimum": 0, "maximum": 20 },
+        "instructions": { "$ref": "#/$defs/instructions" }
+      }
+    },
+
+    "step_timed_simple": {
+      "description": "Fierberea orezului 20–40 min; Food Processor 1 s – 5 min; Pasare și Smoothie 30 s – 2 min.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "duration_sec"],
+      "properties": {
+        "type": { "enum": ["rice", "food_processor", "puree", "smoothie"] },
+        "title": { "$ref": "#/$defs/title" },
+        "duration_sec": { "type": "integer", "minimum": 1, "maximum": 2400 }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "rice" } } }, "then": { "properties": { "duration_sec": { "minimum": 1200, "maximum": 2400 } } } },
+        { "if": { "properties": { "type": { "const": "food_processor" } } }, "then": { "properties": { "duration_sec": { "maximum": 300 } } } },
+        { "if": { "properties": { "type": { "enum": ["puree", "smoothie"] } } }, "then": { "properties": { "duration_sec": { "minimum": 30, "maximum": 120 } } } }
+      ]
+    }
+  }
+}
