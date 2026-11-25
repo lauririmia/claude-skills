@@ -22,6 +22,7 @@ Upload is done through browser automation against the Monsieur Cuisine account (
 | `extract` | `/mcs:extract` | ready | Turn a source into a clean, print-ready Romanian Markdown recipe |
 | `convert` | `/mcs:convert` | ready | Convert the extracted recipe into the Monsieur Cuisine Smart form fields |
 | `upload` | `/mcs:upload` | ready | Run a Playwright script that fills the Monsieur Cuisine form from `<slug>-mcs.json` and saves it |
+| `shopping-list` | `/mcs:shopping-list` | ready | Standalone (not in the workflow): read the account's shopping list and show it as checklists |
 
 ### `extract` — `/mcs:extract`
 
@@ -57,9 +58,20 @@ Uploads the recipe to the user's Monsieur Cuisine account by running [skills/upl
 - **Needs:** `uv` and Google Chrome. Dependencies (`playwright`, `jsonschema`) are installed by `uv` on the fly; the Chrome profile lives in `~/.cache/mcs/chrome-profile` and is **kept between runs**, so the login is needed only when the session expires (`--fresh-session` clears it first); Chrome's password manager is disabled.
 - **Handed to the user:** login and the device choice, in the Chrome window (the script never types passwords). The terms of use are ticked automatically (the user's standing choice; `--manual-terms` to do it yourself).
 - **Options:** no flag = fill only, nothing stored; `--save` = "Salvare proiect" (prints the `recipe-id`, then checks the image); `--finalize-private` = "Salvare ca privat" (never publishes; with `--recipe-id <id>` it finalizes an already saved project without refilling); `--reject-cookies` declines the cookie banner (default: accepted automatically); `--no-ai-declaration` leaves the "image created with AI" box unticked (it is ticked by default); `--review` fills the form once, keeps the same Chrome window open and waits for `save`, `save-private` or `cancel` in `/tmp/mcs-decision` (no second fill after the user approves); `--inspect` lists the form controls when the site changes.
-- **Skill role:** asks for the confirmations (terms, save, finalize), runs the script, reads the screenshot, reports. The old browser-pane flow is kept as [skills/upload/references/manual_flow.md](skills/upload/references/manual_flow.md), for when the script cannot run.
+- **Skill role:** runs the script in review mode, reads the screenshot, then saves the project and finalizes it as private without asking (the user's standing choice; never publishes), and reports. The old browser-pane flow is kept as [skills/upload/references/manual_flow.md](skills/upload/references/manual_flow.md), for when the script cannot run.
 
 See [skills/upload/SKILL.md](skills/upload/SKILL.md).
+
+### `shopping-list` — `/mcs:shopping-list`
+
+Standalone skill, run on its own (it is not a workflow step). Reads the shopping list from `https://www.monsieur-cuisine.com/ro/lista-de-cumparaturi` with [skills/shopping-list/scripts/shopping_list.py](skills/shopping-list/scripts/shopping_list.py) (Playwright, system Chrome, same saved session as `upload`).
+
+- **Reads:** the "Pe categorii" tab (every item with its quantity), then the "Conform rețetei" tab (how many recipes are on the list, and each recipe's items and quantities).
+- **Then empties the list:** the skill runs the script with `--clear`, which, after reading, empties the whole shopping list on the site (all items and recipes: "Golire listă de cumpărături" → "ȘTERGERE TOATE") and checks it is empty. A copy of the result is saved first to `~/.cache/mcs/shopping-list-last.md`, and nothing is deleted when nothing was read. Without `--clear` the script is read-only. It never ticks or adds anything.
+- **Output:** in chat, each list in its own fenced `markdown` block so it can be copied with one click (the `- [ ]` lines become checkboxes where it is pasted): one block with the "Pe categorii" items, then one block per recipe; every item is `- [ ] name — quantity`, with units in the plural when the amount is above 1 (`2 bucăți`). The first block (`Lista de cumpărături (N articole)`, from "Pe categorii") is alphabetical and deduplicated (same ingredient and unit summed; parentheticals like `(căței)` dropped so `usturoi` merges; `după gust` kept only when there is no numeric amount); the recipe blocks (`Conform rețetei — N rețete:`) keep each recipe's own order and lines. `(opțional)` is removed everywhere. `--json` prints the raw structure instead.
+- **Needs:** `uv` and Google Chrome. Login and device choice are the user's, in the Chrome window (the script never types passwords).
+
+See [skills/shopping-list/SKILL.md](skills/shopping-list/SKILL.md).
 
 See [skills/workflow/SKILL.md](skills/workflow/SKILL.md) for the pipeline details.
 
