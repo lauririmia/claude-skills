@@ -5,15 +5,19 @@
 # ///
 """mcs upload: fills the monsieur-cuisine.com "Creare reteta" form (MC smart) from <slug>-mcs.json.
 
-Run:  uv run upload.py RECIPE.json [--accept-terms] [--save [--finalize-private]] [--recipe-id N --finalize-private] [--no-ai-declaration] [--inspect]
+Run:  uv run upload.py RECIPE.json [--manual-terms] [--save [--finalize-private]] [--recipe-id N --finalize-private] [--no-ai-declaration] [--reject-cookies] [--email ADDRESS] [--fresh-session] [--inspect]
 
 Without --save the form is only filled (nothing is stored). --save clicks "Salvare proiect" and prints the
 recipe-id; --finalize-private then does "Completare rețetă -> Salvare ca privat" (never publishes).
+The terms of use are ticked automatically too (--manual-terms to do it yourself).
+Cookie banners are accepted automatically (the user's choice; --reject-cookies declines).
 The "image created with AI" box is ticked by default (the user's standing choice for private recipes).
-The login is always done by the user in the opened Chrome window (the session is kept
-in ~/.cache/mcs/chrome-profile). Passwords are never typed by this script.
+The login is always done by the user in the opened Chrome window. The saved session
+(~/.cache/mcs/chrome-profile) is kept between runs, so the login is needed only when it expires
+(--fresh-session clears it first);
+Chrome's password manager is switched off, so it never offers to save the password. Passwords are never typed by this script.
 """
-import argparse, json, os, re, sys, time
+import argparse, json, os, re, shutil, sys, time
 from pathlib import Path
 
 FORM_URL = "https://www.monsieur-cuisine.com/ro/creare-reteta?devices=mc-smart"
@@ -55,26 +59,124 @@ def inspect(page, label):
         log(json.dumps(e, ensure_ascii=False))
 
 
-def wait_for_form(page, accept_terms):
+COOKIE_ACCEPT = re.compile(r"^\s*(accept(ă)? toate|accept all|allow all|accept)( cookie-?uri(le)?)?\s*$", re.I)
+COOKIE_REJECT = re.compile(r"^\s*(respinge(ți)?( toate)?|reject all|refuz[aă]( toate)?)\s*$", re.I)
+
+
+def handle_cookies(page, reject=False):
+    """Click the cookie banner away if it is showing (default: accept all, the user's choice)."""
+    try:
+        sel = "#onetrust-reject-all-handler" if reject else "#onetrust-accept-btn-handler"
+        btn = page.locator(sel)
+        if not (btn.count() and btn.first.is_visible()):
+            btn = page.locator("button", has_text=COOKIE_REJECT if reject else COOKIE_ACCEPT)
+        if btn.count() and btn.first.is_visible():
+            btn.first.click(timeout=3000)
+            page.wait_for_timeout(500)
+            log("Banner cookie-uri:", "respins" if reject else "acceptat")
+    except Exception:
+        pass
+
+
+BUSY = re.compile(r"capacitate\s+maxim|reîncercați|reincercati|try again later|at capacity", re.I)
+
+
+def busy_retry(page, told, typed, state):
+    """The site sometimes answers 'Lucrăm la capacitate maximă... reîncercați'. Back off and retry."""
+    state["n"] = state.get("n", 0) + 1
+    if state["n"] > 8:
+        sys.exit("Site-ul raportează în continuare „capacitate maximă” după 8 încercări. Reia mai târziu.")
+    wait = 15 * state["n"]
+    log(f"Site-ul e la capacitate maximă; reîncerc peste {wait} s (încercarea {state['n']}/8).")
+    page.wait_for_timeout(wait * 1000)
+    nxt = page.locator("button, input[type=submit]", has_text=re.compile(r"^\s*continu(ă|a|e)\s*$", re.I))
+    pw = page.locator("input[type=password]").filter(visible=True)
+    if pw.count() and pw.first.evaluate("e => e.value.length") > 0 and nxt.count():
+        nxt.first.click(timeout=3000)   # the password is still in the field: just press Continuă again
+        log("Apăsat din nou „Continuă”.")
+    else:
+        page.goto(FORM_URL)             # start over; e-mail is refilled, the password is typed by the user
+        for k in ("email", "login", "pw_click"):
+            told.discard(k)
+        typed.clear()
+
+
+def wait_for_form(page, accept_terms, reject_cookies=False, email=None):
     """Get to the 'Creare reteta' form; login/device choice are the user's."""
     told = set()
+    typed = {}
+    busy = {}
     deadline = time.time() + 15 * 60
     page.goto(FORM_URL)
     while time.time() < deadline:
         page.wait_for_timeout(1000)
+        handle_cookies(page, reject_cookies)
+        if BUSY.search(page.locator("body").inner_text()[:4000]) and not page.get_by_placeholder("Dați rețetei un nume.").count():
+            busy_retry(page, told, typed, busy)
+            continue
         if page.get_by_text("Aparat").first.is_visible() and page.get_by_placeholder("Dați rețetei un nume.").is_visible():
             return
-        if page.get_by_text("Accept condițiile de utilizare").first.is_visible():
+        if page.get_by_text(re.compile("selectați aparatul", re.I)).first.is_visible():
+            # device choice page (its URL is autentificare-necesara, so test it before the login branch)
+            if "device" not in told:
+                told.add("device"); log("Aleg aparatul MC SMART.")
+            try:
+                page.locator(".device-selector-item", has_text=re.compile(r"mc smart", re.I)).first.click(timeout=6000)
+                page.wait_for_timeout(500)
+                ok = page.locator("button", has_text=re.compile(r"^\s*ok\s*$", re.I))
+                if ok.count() and ok.first.is_enabled():
+                    ok.first.click(timeout=3000)
+                    log("Aparat confirmat (OK).")
+                    page.wait_for_timeout(1500)
+            except Exception as e:  # usually a first attempt while the dialog animates; the loop retries
+                busy["dev_err"] = busy.get("dev_err", 0) + 1
+                if busy["dev_err"] >= 3:
+                    log("device:", str(e)[:200])
+        elif page.get_by_text(re.compile("prelucrarea datelor|prelucrare a datelor|prelucrării datelor", re.I)).first.is_visible() \
+                and page.locator("button, input[type=submit]", has_text=re.compile(r"^\s*accept(ă|a)\s*$", re.I)).count():
+            # data-processing consent page shown after login: the user asked for it to be accepted automatically
+            try:
+                page.locator("button, input[type=submit]", has_text=re.compile(r"^\s*accept(ă|a)\s*$", re.I)).first.click(timeout=3000)
+                log("Prelucrarea datelor: acceptată (implicit, alegerea utilizatorului).")
+                page.wait_for_timeout(1500)
+            except Exception as e:
+                log("consimțământ:", str(e)[:120])
+        elif page.get_by_text("Accept condițiile de utilizare").first.is_visible():
             if accept_terms:
+                box = page.locator("input[type=checkbox]").filter(visible=True).first
                 page.get_by_text("Accept condițiile de utilizare").first.click()
-                page.get_by_role("button", name="Începeți acum").click()
+                page.wait_for_timeout(500)
+                if box.count() and not box.is_checked():
+                    box.check(force=True)
+                page.locator("button", has_text=re.compile(r"începeți acum", re.I)).click(timeout=5000)
+                log("Condițiile de utilizare: bifate (implicit, alegerea utilizatorului).")
             elif "terms" not in told:
                 told.add("terms"); log(">> Bifeaza tu 'Accept conditiile de utilizare' si apasa 'Incepeti acum' in fereastra Chrome.")
         elif "accounts.lidl.com" in page.url or "autentificare" in page.url:
+            if email and "email" not in told:
+                # only the e-mail (a username) is filled; the password is always typed by the user
+                field = page.locator("input[type=email], input[name*=mail i], input[id*=mail i]").filter(visible=True)
+                if field.count():
+                    field.first.fill(email)
+                    told.add("email"); log("E-mail completat în câmpul de login.")
+                    nxt = page.locator("button, input[type=submit]", has_text=re.compile(r"^\s*continu(ă|a|e)\s*$", re.I))
+                    if nxt.count():
+                        nxt.first.click(timeout=3000)
+                        log("Apăsat „Continuă”; parola o introduci tu.")
+            pw = page.locator("input[type=password]").filter(visible=True)
+            if pw.count() and "pw_click" not in told:
+                # The user types the password. Press "Continuă" only once the field has been left unchanged
+                # for ~3 s, i.e. after the whole password was typed (not after its first character).
+                n = pw.first.evaluate("e => e.value.length")
+                if n != typed.get("n"):
+                    typed["n"], typed["t"] = n, time.time()
+                elif n > 0 and time.time() - typed["t"] >= 3:
+                    nxt = page.locator("button, input[type=submit]", has_text=re.compile(r"^\s*continu(ă|a|e)\s*$", re.I))
+                    if nxt.count():
+                        told.add("pw_click"); nxt.first.click(timeout=3000)
+                        log("Parola introdusă de tine; apăsat „Continuă”.")
             if "login" not in told:
                 told.add("login"); log(">> Autentifica-te tu in fereastra Chrome (scriptul nu introduce parole). Astept...")
-        elif "device" not in told and page.get_by_text("MC SMART").first.is_visible():
-            told.add("device"); log(">> Alege tu MC SMART in fereastra Chrome. Astept...")
     sys.exit("Timeout: formularul nu s-a deschis in 15 minute.")
 
 
@@ -329,11 +431,14 @@ def finalize_private(page, rid):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("recipe")
-    ap.add_argument("--accept-terms", action="store_true", help="user confirmed ticking the terms of use")
+    ap.add_argument("--manual-terms", action="store_true", help="do NOT tick the terms of use (default: ticked automatically, the user's standing choice)")
     ap.add_argument("--save", action="store_true", help="user confirmed 'Salvare proiect'")
     ap.add_argument("--no-ai-declaration", action="store_true", help="do NOT tick 'image created with AI' (default: ticked, by the user's standing choice)")
     ap.add_argument("--finalize-private", action="store_true", help="user confirmed 'Salvare ca privat' (needs --save)")
     ap.add_argument("--recipe-id", help="an already saved project: skip the form and only finalize it (with --finalize-private)")
+    ap.add_argument("--reject-cookies", action="store_true", help="reject non-essential cookies instead of accepting all (default: accept all)")
+    ap.add_argument("--email", help="fill this e-mail in the login form (or set MCS_EMAIL); the password is never filled")
+    ap.add_argument("--fresh-session", action="store_true", help="clear the saved Chrome session first, so this run starts logged out (default: the session is kept)")
     ap.add_argument("--screenshot", default="/tmp/mcs-form.png")
     ap.add_argument("--inspect", action="store_true", help="only dump the form controls of each step")
     a = ap.parse_args()
@@ -344,12 +449,21 @@ def main():
         sys.exit("JSON invalid:\n- " + "\n- ".join(errs))
 
     from playwright.sync_api import sync_playwright
+    if a.fresh_session:
+        shutil.rmtree(PROFILE, ignore_errors=True)
     PROFILE.mkdir(parents=True, exist_ok=True)
+    # Chrome must not offer to save the password: switch its password manager off in the (fresh) profile
+    (PROFILE / "Default").mkdir(exist_ok=True)
+    prefs = PROFILE / "Default" / "Preferences"
+    if not prefs.exists():
+        prefs.write_text(json.dumps({"credentials_enable_service": False, "credentials_enable_autosignin": False,
+                                     "profile": {"password_manager_enabled": False}}))
     with sync_playwright() as p:
         ctx = p.chromium.launch_persistent_context(str(PROFILE), channel="chrome", headless=False, chromium_sandbox=True,
+                                                   args=["--disable-save-password-bubble"],
                                                    viewport={"width": 1280, "height": 900})
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        wait_for_form(page, a.accept_terms)
+        wait_for_form(page, not a.manual_terms, a.reject_cookies, a.email or os.environ.get("MCS_EMAIL"))
         log("Formular deschis.")
         if a.inspect and not a.save:
             inspect(page, "pas 1 Detalii")
