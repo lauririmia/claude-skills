@@ -18,8 +18,8 @@ source  ──►  1. extract  ──►  2. convert  ──►  3. upload  ─�
 | # | Skill | Status | Input | Output |
 |---|---|---|---|---|
 | 1 | `extract` | ready | Recipe source: web URL, pasted text, screenshot/PDF, local Markdown/text file, or YouTube link (transcript is extracted first) | A clean Romanian Markdown recipe (title, servings, difficulty, times, calories, ingredients, steps, serving), returned in chat for copy/paste |
-| 2 | `convert` | ready | The Markdown from `extract` (pasted in chat or in the conversation) | Copy/paste-ready Markdown with every field of the monsieur-cuisine.com form: details, estimated nutrition, times, ingredients, device steps with programs, image (file saved next to the user's working directory) |
-| 3 | `upload` | ready | The Markdown block from `convert` | The form on monsieur-cuisine.com filled in the browser pane, saved as a project and, only on the user's explicit request, finalized as a private recipe. Login, the image file picker and the AI-image declaration are handed to the user |
+| 2 | `convert` | ready | The Markdown from `extract` (pasted in chat or in the conversation) | Three things, written from the same data: a copy/paste-ready Markdown block in chat with every field of the monsieur-cuisine.com form (details, estimated nutrition, times, ingredients, device steps with programs); the image `<slug>-mcs.jpg`; and `<slug>-mcs.json`, the schema-validated machine-readable version. Both files go in the user's working directory |
+| 3 | `upload` | ready | The `<slug>-mcs.json` from `convert` (the Markdown block is not read) | A Playwright script (`upload/scripts/upload.py`) fills the form in Chrome, saves it as a project (`--save`) and, only on the user's explicit request, finalizes it as a private recipe (`--finalize-private`). The user types the password; cookies, terms, device choice and the AI-image box are handled by the script. The result is a `recipe-id` and an image check |
 
 "Planned" means a skill has not been written yet. Skills are added one at a time, and the README is updated each time (see Maintenance).
 
@@ -27,7 +27,7 @@ source  ──►  1. extract  ──►  2. convert  ──►  3. upload  ─�
 
 1. Identify the recipe source from the user's message. If there is none, ask for it.
 2. Walk the pipeline in order. Before each step, check the Status column: if the skill exists (status `ready`), invoke it as `/mcs:<skill>`; if it is `planned`, tell the user that step is not defined yet and stop there rather than improvising it. An improvised conversion or upload would produce a recipe format nobody has verified against the real device.
-3. Pass each step's output to the next explicitly, and show the user the result of `convert` before `upload`. Uploading changes the user's account, so it needs their go-ahead.
+3. Pass each step's output to the next explicitly: `extract`'s Markdown goes to `convert`, and `convert`'s JSON file path goes to `upload`. Show the user the result of `convert` before `upload`. Uploading changes the user's account, so saving and finalizing need their go-ahead.
 4. The user may start mid-pipeline (e.g. they already have a normalized recipe). Skip the steps whose output they already have.
 
 ## Maintenance
